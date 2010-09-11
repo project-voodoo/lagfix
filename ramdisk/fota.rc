@@ -1,0 +1,129 @@
+
+on init
+
+sysclktz 0
+
+loglevel 3
+
+# setup the global environment
+    export PATH /sbin:/system/sbin:/system/bin:/system/xbin
+    export LD_LIBRARY_PATH /system/lib:/system/lib/egl
+    export ANDROID_BOOTLOGO 1
+    export ANDROID_ROOT /system
+    export ANDROID_ASSETS /system/app
+    export ANDROID_DATA /data
+    export EXTERNAL_STORAGE /sdcard
+    export BOOTCLASSPATH /system/framework/core.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/android.policy.jar:/system/framework/services.jar
+    export TMPDIR /data/local/tmp
+
+
+# Backward compatibility
+    symlink /system/etc /etc
+
+	
+# to enable wifi
+     setprop wifi.interface "eth0"
+# end of wifi
+	
+# +++++++++++++++++++++++++++++++++++++++++++
+# bootsnd
+    setprop audioflinger.bootsnd 1
+# end of bootsnd
+
+# Insert all modules here
+    mkdir /lib/modules
+    insmod /lib/modules/fsr.ko
+    insmod /lib/modules/fsr_stl.ko
+    insmod /lib/modules/rfs_glue.ko
+    insmod /lib/modules/rfs_fat.ko
+    insmod /lib/modules/j4fs.ko
+	#added by khoonk for parameter reading on 20100321
+	mount j4fs /dev/block/stl6 /mnt/.lfs
+	#added by khoonk for parameter reading on 20100321
+	insmod /lib/modules/param.ko
+	insmod /lib/modules/drop_caches.ko
+
+# create mountpoints and mount tmpfs on sqlite_stmt_journals
+    mkdir /sdcard 0000 system system
+    chown system system /sdcard
+    chmod 0000 /sdcard
+    mkdir /system
+    mkdir /data 0771 system system
+    chown system system /data
+    chmod 0771 /data
+    mkdir /efs 0771 system system
+    mkdir /cache 0770 system cache
+    chown system cache /cache
+    chmod 0770 /cache
+
+    mount rfs /dev/block/stl9 /system check=no
+
+#    mount yaffs2 mtd@system /system ro remount
+
+    # We chown/chmod /data again so because mount is run as root + defaults
+##    mount yaffs2 mtd@userdata /data nosuid nodev
+
+#    mount rfs /dev/block/stl7 /data nosuid nodev check=no
+
+#    chown system system /data
+#    chmod 0771 /data
+
+###################################################################    
+# create SEC_INTERNAL_STORAGE 2/2   
+##    mount ext3 /dev/block/mmcblk0p1 /userdata nosuid nodev
+    mount rfs /dev/block/mmcblk0p2 /data nosuid nodev check=no
+    chown system system /data
+    chmod 0771 /data
+   
+###################################################################  
+
+mkdir /dbdata
+mount rfs /dev/block/stl10 /dbdata
+chown system system /dbdata
+chmod 0771 /dbdata
+    mount rfs /dev/block/stl11 /cache nosuid nodev check=no
+    chown system cache /cache
+    chmod 0770 /cache
+
+#	for vold update by FS update
+    mkdir /cache/temp 0771 system system
+    copy /system/bin/vold /cache/temp/vold
+    chmod 0771 /cache/temp/vold
+
+#   copy /sbin/redbend_ua /cache/temp/redbend_ua
+#   copy /data/fota/ua /cache/temp/redbend_ua
+#   chmod 0771 /cache/temp/redbend_ua
+
+on boot
+#	write /sys/class/sec/switch/usb_sel PDA
+
+    ifup lo
+    hostname localhost
+    domainname localdomain
+
+	class_start default
+
+
+
+#service console /bin/sh
+#service console /system/bin/sh
+#    console
+
+on property:persist.service.adb.enable=1
+    start adbd
+
+on property:persist.service.adb.enable=0
+    stop adbd  
+
+#service vold /system/bin/vold
+#    socket vold stream 0660 root mount
+service vold /cache/temp/vold
+    socket vold stream 0660 root mount
+
+service redbend_ua /sbin/redbend_ua all
+    oneshot
+
+#service redbend_ua /cache/temp/redbend_ua all
+#    oneshot
+
+service adbd /sbin/adbd redbend_ua all
