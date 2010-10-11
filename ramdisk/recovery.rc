@@ -6,6 +6,9 @@ on init
 	export PATH /sbin:/system/bin
 	export LD_LIBRARY_PATH /lib:/system/lib:/system/lib/egl
 
+	# Voodoo
+	export PATH /voodoo:/sbin:/system/bin
+
 	export ANDROID_ROOT /system
 	export ANDROID_DATA /data
 	export EXTERNAL_STORAGE /sdcard
@@ -50,8 +53,8 @@ on boot
 	class_start default
 
 #service console /bin/sh
-service console /system/bin/sh
-	console
+#service console /system/bin/sh
+#	console
 
 service recovery /sbin/recovery
 	oneshot
@@ -64,4 +67,6 @@ on property:persist.service.adb.enable=1
 on property:persist.service.adb.enable=0
 	stop adbd
 
+on property:service.console.status=stop
+	stop console
 

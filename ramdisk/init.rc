@@ -103,7 +103,7 @@ loglevel 3
 ###################################################################    
 # create SEC_INTERNAL_STORAGE 2/2   
 ##    mount ext3 /dev/block/mmcblk0p1 /userdata nosuid nodev
-#    mount rfs /dev/block/mmcblk0p2 /data nosuid nodev check=no
+    mount rfs /dev/block/mmcblk0p2 /data nosuid nodev check=no
     chown system system /data
     chmod 0771 /data
    
@@ -388,15 +388,14 @@ service playlogos1 /system/bin/playlogos1
     oneshot
 # adbd is controlled by the persist.service.adb.enable system property
 service adbd /sbin/adbd
-#    disabled
+    disabled
 # adbd on at boot in emulator
 on property:ro.kernel.qemu=1
     start adbd
 on property:persist.service.adb.enable=1
     start adbd
 on property:persist.service.adb.enable=0
-    start adbd
-#    stop adbd
+    stop adbd
 # 3D init
 service pvrsrvinit /system/bin/pvrsrvinit
    user root
