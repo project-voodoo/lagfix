@@ -67,7 +67,7 @@ load_stage() {
 					xzcat /voodoo/stage$1.cpio.xz | cpio -div
 				fi
 
-				stagefile="/sdcard/Voodoo/ressources/stage$1.cpio.xz"
+				stagefile="/sdcard/Voodoo/resources/stage$1.cpio.xz"
 
 				# load the designated stage after verifying it's
 				# signature to prevent security exploit from sdcard
@@ -209,9 +209,9 @@ load_soundsystem() {
 	# cache the voices from the SD to the ram
 	# with a size limit to prevent filling memory security expoit
 	if ! test -d /voodoo/voices; then
-		if test `du -s /sdcard/Voodoo/ressources/voices/ | cut -d \/ -f1` -le 1024; then
+		if test `du -s /sdcard/Voodoo/resources/voices/ | cut -d \/ -f1` -le 1024; then
 			# copy the voices, using cpio as a "cp" replacement (shrink)
-			cd /sdcard/Voodoo/ressources
+			cd /sdcard/Voodoo/resources
 			find voices/ | cpio -p /voodoo
 			cd /
 			log "voices loaded"
@@ -369,7 +369,7 @@ if test "`find /sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 
 		log "lag fix disabled and ext4 detected"
 		# ext4 partition detected, let's convert it back to rfs :'(
-		# mount ressources
+		# mount resources
 		set_partitions voodoo
 		mount_data_ext4
 		mount_dbdata
@@ -390,7 +390,7 @@ if test "`find /sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		say "step1"&
 		make_backup
 		
-		# umount mmcblk0 ressources
+		# umount mmcblk0 resources
 		umount /dbdata
 		umount /sdcard
 		umount /data
@@ -443,8 +443,8 @@ if ! ext4_check ; then
 	# for that we first need to restore Samsung's partition table
 	set_partitions samsung
 	
-	# mount ressources we need
-	log "mount ressources to backup"
+	# mount resources we need
+	log "mount resources to backup"
 	mount_data_rfs
 	mount_dbdata
 	mount_sdcard
@@ -470,7 +470,7 @@ if ! ext4_check ; then
 		log "error: protection file present in rfs but no ext4 data"
 	fi
 	
-	# umount mmcblk0 ressources
+	# umount mmcblk0 resources
 	umount /sdcard
 	umount /data
 	
