@@ -20,6 +20,7 @@ my_pwd=`pwd`
 # create the destination directory
 mkdir $2 2>/dev/null
 
+# copy the ramdisk source to the voodoo ramdisk directory
 cp -ax $1/* $2/
 cd $2
 
@@ -29,8 +30,23 @@ mv init init_samsung
 chmod 06755 sbin/su
 
 # copy ramdisk stuff
-
 mkdir voodoo 2>/dev/null
-cp -axvi $my_pwd/$3/*  voodoo
+cp -ax $my_pwd/$3/*  voodoo/
 
-#ln -s voodoo/
+# empty directories, not in git.
+mkdir dev/block
+mkdir dev/snd
+mkdir voodoo/tmp
+mkdir voodoo/root/usr
+
+# symlink to voodoo stuff
+ln -s voodoo/root/bin .
+ln -s voodoo/root/usr .
+ln -s ../bin/busybox sbin/hdparm 
+ln -s ../bin/busybox sbin/insmod
+
+
+# create the main init symlink
+ln -s voodoo/scripts/init_logger.sh init
+#ln -s init_samsung init
+

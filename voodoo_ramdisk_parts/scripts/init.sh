@@ -32,13 +32,14 @@
 ###############################################################################
 
 set -x
-PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/system/bin:/system/sbin
+PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin:/system/sbin
 
-data_archive='/sdcard/voodoo_user-data.cpio'
+sdcard='/tmp/sdcard'
+data_archive='$sdcard/voodoo_user-data.cpio'
 
 alias mount_data_ext4="mount -t ext4 -o noatime,nodiratime /dev/block/mmcblk0p4 /data"
 alias mount_data_rfs="mount -t rfs -o nosuid,nodev,check=no /dev/block/mmcblk0p2 /data"
-alias mount_sdcard="mount -t vfat -o utf8 /dev/block/mmcblk0p1 /sdcard"
+alias mount_sdcard="mount -t vfat -o utf8 /dev/block/mmcblk0p1 $sdcard"
 alias mount_cache="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl11 /cache"
 alias mount_dbdata="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl10 /dbdata"
 alias check_dbdata="fsck_msdos -y /dev/block/stl10"
@@ -66,7 +67,7 @@ load_stage() {
 					xzcat /voodoo/stage$1.cpio.xz | cpio -div
 				fi
 
-				stagefile="/sdcard/Voodoo/resources/stage$1.cpio.xz"
+				stagefile="$sdcard/Voodoo/resources/stage$1.cpio.xz"
 
 				# load the designated stage after verifying it's
 				# signature to prevent security exploit from sdcard
@@ -88,7 +89,7 @@ load_stage() {
 
 detect_supported_model() {
 	# read the actual MBR
-	dd if=/dev/block/mmcblk0 of=/tmp/original.mbr bs=512 count=1
+	dd if=/dev/block/mmcblk0 of=/tmp-/original.mbr bs=512 count=1
 
 	for x in /voodoo/mbrs/samsung/* /voodoo/mbrs/voodoo/* ; do
 		if cmp $x /tmp/original.mbr; then
@@ -136,7 +137,7 @@ check_free() {
 	# space lost with Ext4 conversion with offset
 	
 	# read free space on internal SD
-	target_free=`df /sdcard | cut -d' ' -f 6 | cut -d K -f 1`
+	target_free=`df $sdcard | cut -d' ' -f 6 | cut -d K -f 1`
 
 	# read space used by data we need to save
 	space_needed=$((`df /data | cut -d' ' -f 4 | cut -d K -f 1` \
@@ -168,7 +169,7 @@ ext4_check() {
 
 		mount_sdcard
 		say "data-wiped"
-		umount /sdcard
+		umount $sdcard
 		
 		log "ext4 present but protection file absent"
 		return 1
@@ -208,9 +209,9 @@ load_soundsystem() {
 	# cache the voices from the SD to the ram
 	# with a size limit to prevent filling memory security expoit
 	if ! test -d /voodoo/voices; then
-		if test `du -s /sdcard/Voodoo/resources/voices/ | cut -d \/ -f1` -le 1024; then
+		if test `du -s $sdcard/Voodoo/resources/voices/ | cut -d \/ -f1` -le 1024; then
 			# copy the voices, using cpio as a "cp" replacement (shrink)
-			cd /sdcard/Voodoo/resources
+			cd $sdcard/Voodoo/resources
 			find voices/ | cpio -p /voodoo
 			cd /
 			log "voices loaded"
@@ -226,38 +227,40 @@ letsgo() {
 	# dump logs to the sdcard
 	mount_sdcard
 	# create the Voodoo dir in sdcard if not here already
-	test -f /sdcard/Voodoo && rm /sdcard/Voodoo
-	mkdir /sdcard/Voodoo
+	test -f $sdcard/Voodoo && rm $sdcard/Voodoo
+	mkdir $sdcard/Voodoo
 
 	log "running init !"
 
 	if test $debug_mode = 1; then
 		# copy some logs in it to help beta debugging
-		mkdir /sdcard/Voodoo/logs
+		mkdir $sdcard/Voodoo/logs
 		
-		cat /voodoo.log >> /sdcard/Voodoo/logs/voodoo.txt
-		echo >> /sdcard/Voodoo/logs/voodoo.txt
+		cat /voodoo.log >> $sdcard/Voodoo/logs/voodoo.txt
+		echo >> $sdcard/Voodoo/logs/voodoo.txt
 		
-		cat /init.log > /sdcard/Voodoo/logs/init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
+		cat /init.log > $sdcard/Voodoo/logs/init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
 	else
 		# we are not in debug mode, let's wipe stuff to free some MB of memory !
 		rm -r /voodoo
 		# clean now broken symlinks
 		rm /bin /usr
 		# clean debugs logs too
-		rm -r /sdcard/Voodoo/logs
+		rm -r $sdcard/Voodoo/logs 2>/dev/null
 	fi
 
-	umount /sdcard
+	umount $sdcard
 	# set the etc to Android standards
 	rm /etc
-	ln -s /system/etc /etc
+	# on Froyo ramdisk, there is no etc to /etc/system symlink anymore
 	
+	# remove our tmp directory
+	rm -r /tmp
 	
 	umount /system
 	
 	# run Samsung's init and disappear
-	exec /sbin/init
+	exec /init_samsung
 }
 
 # STAGE 1
@@ -267,53 +270,27 @@ mount -t proc proc /proc
 mount -t sysfs sys /sys
 
 # create used devices nodes
-# standard
-mknod /dev/null c 1 3
-mknod /dev/zero c 1 5
-
-# internal & external SD
-mknod /dev/block/mmcblk0 b 179 0
-mknod /dev/block/mmcblk0p1 b 179 1
-mknod /dev/block/mmcblk0p2 b 179 2
-mknod /dev/block/mmcblk0p3 b 179 3
-mknod /dev/block/mmcblk0p4 b 179 4
-mknod /dev/block/mmcblk1 b 179 8
-mknod /dev/block/stl1 b 138 1
-mknod /dev/block/stl2 b 138 2
-mknod /dev/block/stl3 b 138 3
-mknod /dev/block/stl4 b 138 4
-mknod /dev/block/stl5 b 138 5
-mknod /dev/block/stl6 b 138 6
-mknod /dev/block/stl7 b 138 7
-mknod /dev/block/stl8 b 138 8
-mknod /dev/block/stl9 b 138 9
-mknod /dev/block/stl10 b 138 10
-mknod /dev/block/stl11 b 138 11
-mknod /dev/block/stl12 b 138 12
-
-# soundcard
-mknod /dev/snd/controlC0 c 116 0
-mknod /dev/snd/controlC1 c 116 32
-mknod /dev/snd/pcmC0D0c c 116 24
-mknod /dev/snd/pcmC0D0p c 116 16
-mknod /dev/snd/pcmC1D0c c 116 56
-mknod /dev/snd/pcmC1D0p c 116 48
-mknod /dev/snd/timer c 116 33
-
+create_devices.sh
 
 # insmod required modules
 insmod /lib/modules/fsr.ko
 insmod /lib/modules/fsr_stl.ko
 insmod /lib/modules/rfs_glue.ko
 insmod /lib/modules/rfs_fat.ko
-insmod /lib/modules/j4fs.ko
-insmod /lib/modules/dpram.ko
-
 
 # new in beta5, using /system
 mount -t rfs -o ro,check=no /dev/block/stl9 /system 
+
+# use Voodoo etc during the script
+ln -s voodoo/root/etc /etc
+
+# make a temporary tmp directory ;)
+mkdir /tmp
+mkdir /tmp/sdcard
+
 # copy the sound configuration
 cat /system/etc/asound.conf > /etc/asound.conf
+
 
 # hardware-detection
 detect_supported_model
@@ -353,7 +330,7 @@ umount /cache
 mount_sdcard
 
 # debug mode detection
-if test "`find /sdcard/Voodoo/ -iname 'enable*debug*'`" != "" ; then
+if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" ; then
 	echo "service adbd_voodoo_debug /sbin/adbd" >> /init.rc
 	echo "	root" >> /init.rc
 	echo "	enabled" >> /init.rc
@@ -361,8 +338,8 @@ if test "`find /sdcard/Voodoo/ -iname 'enable*debug*'`" != "" ; then
 fi
 
 
-if test "`find /sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
-	umount /sdcard
+if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
+	umount $sdcard
 	
 	if ext4_check; then
 
@@ -391,7 +368,7 @@ if test "`find /sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		
 		# umount mmcblk0 resources
 		umount /dbdata
-		umount /sdcard
+		umount $sdcard
 		umount /data
 
 		# restore Samsung's partition layout on the internal SD
@@ -409,7 +386,7 @@ if test "`find /sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		log "restore backup on rfs /data"
 		say "step2"
 		restore_backup
-		umount /sdcard
+		umount $sdcard
 
 		say "success"
 
@@ -428,7 +405,7 @@ if test "`find /sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 	letsgo
 
 fi
-umount /sdcard
+umount $sdcard
 
 # Voodoo lagfix is enabled
 # detect if the data partition is in ext4 format
@@ -469,7 +446,7 @@ if ! ext4_check ; then
 	fi
 	
 	# umount mmcblk0 resources
-	umount /sdcard
+	umount $sdcard
 	umount /data
 	
 	# write the fake protection file on mmcblk0p2, just in case
@@ -498,7 +475,7 @@ if ! ext4_check ; then
 	# clean all these mounts
 	log "umount what will be re-mounted by Samsung's Android init"
 	umount /dbdata
-	umount /sdcard
+	umount $sdcard
 	
 	say "success"&
 
