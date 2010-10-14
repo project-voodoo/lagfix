@@ -45,7 +45,6 @@ alias check_dbdata="fsck_msdos -y /dev/block/stl10"
 
 alias make_backup="find /data /dbdata | cpio -H newc -o > $data_archive"
 alias blkrrpart="hdparm -z /dev/block/mmcblk0"
-alias compatibility_hacks="/voodoo/compatibility_hacks.sh"
 
 debug_mode=0
 
@@ -91,7 +90,7 @@ detect_supported_model() {
 	# read the actual MBR
 	dd if=/dev/block/mmcblk0 of=/tmp/original.mbr bs=512 count=1
 
-	for x in /voodoo/mbr_samsung/* /res/mbr_voodoo/* ; do
+	for x in /voodoo/mbrs/samsung/* /voodoo/mbrs/voodoo/* ; do
 		if cmp $x /tmp/original.mbr; then
 			model=`echo $x | /bin/cut -d \/ -f4`
 			break
@@ -105,14 +104,14 @@ set_partitions() {
 	case $1 in
 		samsung)
 			if test "$current_partition_model" != "samsung"; then
-				cat /voodoo/mbr_samsung/$model > /dev/block/mmcblk0
+				cat /voodoo/mbrs/samsung/$model > /dev/block/mmcblk0
 				log "set Samsung partitions"
 				blkrrpart 
 			fi
 		;;
 		voodoo)
 			if test "$current_partition_model" != "voodoo"; then
-				cat /voodoo/mbr_voodoo/$model > /dev/block/mmcblk0
+				cat /voodoo/mbrs/voodoo/$model > /dev/block/mmcblk0
 				log "set voodoo partitions"
 				blkrrpart
 			fi
@@ -425,7 +424,6 @@ if test "`find /sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 
 	fi
 
-	compatibility_hacks lagfix-disabled
 	# now we know that /data is in RFS anyway. let's fire init !
 	letsgo
 
@@ -513,8 +511,6 @@ else
 	mount_data_ext4
 
 fi
-
-compatibility_hacks lagfix-enabled
 
 # run Samsung's Android init
 letsgo
