@@ -33,7 +33,12 @@ chmod 06755 sbin/su
 mkdir voodoo 2>/dev/null
 cp -ax $my_pwd/$3/*  voodoo/
 
-# empty directories, not in git.
+# empty directories, probably not in gits
+mkdir dev 2>/dev/null
+mkdir proc 2>/dev/null
+mkdir sys 2>/dev/null
+mkdir system 2>/dev/null
+
 mkdir dev/block
 mkdir dev/snd
 mkdir voodoo/tmp

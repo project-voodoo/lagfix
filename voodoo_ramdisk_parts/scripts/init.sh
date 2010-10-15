@@ -35,28 +35,37 @@ set -x
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin:/system/sbin
 
 sdcard='/tmp/sdcard'
-data_archive='$sdcard/voodoo_user-data.cpio'
+sdcard_ext='/tmp/sdcard_ext'
+data_archive="$sdcard/voodoo_user-data.cpio"
 
 alias mount_data_ext4="mount -t ext4 -o noatime,nodiratime /dev/block/mmcblk0p4 /data"
 alias mount_data_rfs="mount -t rfs -o nosuid,nodev,check=no /dev/block/mmcblk0p2 /data"
-alias mount_sdcard="mount -t vfat -o utf8 /dev/block/mmcblk0p1 $sdcard"
 alias mount_cache="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl11 /cache"
 alias mount_dbdata="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl10 /dbdata"
 alias check_dbdata="fsck_msdos -y /dev/block/stl10"
 
+alias mount_sdcard="mount -t vfat -o utf8 /dev/block/mmcblk0p1 $sdcard"
+alias mount_sdcard_ext="mount -t vfat -o utf8 /dev/block/mmcblk1 $sdcard_ext"
+
 alias make_backup="find /data /dbdata | cpio -H newc -o > $data_archive"
 alias blkrrpart="hdparm -z /dev/block/mmcblk0"
 
-debug_mode=0
+debug_mode=1
+force_disable_lagfix=1
 
 load_stage() {
 	# don't reload a stage already in memory
 	if ! test -f /tmp/stage$1_loaded; then
 		case $1 in
 			2)
-				# this stage is in ramdisk. no security check
-				log "load stage2"
-				xzcat /voodoo/stage2.cpio.xz | cpio -div
+				stagefile="/voodoo/stage2.cpio.xz"
+				if test -f $stagefile; then
+					# this stage is in ramdisk. no security check
+					log "load stage2"
+					xzcat $stagefile | cpio -div
+				else
+					log "no stage2 to load"
+				fi
 			;;
 			*)
 				# give the option to load without signature
@@ -65,35 +74,43 @@ load_stage() {
 				if test -f /voodoo/stage$1.cpio.xz; then
 					log "load stage $1 from ramdisk"
 					xzcat /voodoo/stage$1.cpio.xz | cpio -div
-				fi
+				else
 
-				stagefile="$sdcard/Voodoo/resources/stage$1.cpio.xz"
+					stagefile="$sdcard/Voodoo/resources/stage$1.cpio.xz"
 
-				# load the designated stage after verifying it's
-				# signature to prevent security exploit from sdcard
-				signature=`sha1sum $stagefile | cut -d' ' -f 1`
-				for x in `cat /voodoo/signatures/$1`; do
-					if test "$x" = "$signature"  ; then
-						log "load stage $1 from SD"
-						xzcat $stagefile | cpio -div
-						break
+					# load the designated stage after verifying it's
+					# signature to prevent security exploit from sdcard
+					if test -f $stagefile; then
+						signature=`sha1sum $stagefile | cut -d' ' -f 1`
+						for x in `cat /voodoo/signatures/$1`; do
+							if test "$x" = "$signature"  ; then
+								log "load stage $1 from SD"
+								xzcat $stagefile | cpio -div
+								break
+							fi
+						done
+						log "stage $1 not loaded, signature mismatch"
+						retcode=1
 					fi
-				done
-				log "stage $1 not loaded, signature mismatch"
+					log "stage $1 not loaded, stage file don't exist"
+					retcode=1
+					
+				fi
 
 			;;
 		esac
 		> /tmp/stage$1_loaded
 	fi
+	return $retcode
 }
 
 detect_supported_model() {
 	# read the actual MBR
-	dd if=/dev/block/mmcblk0 of=/tmp-/original.mbr bs=512 count=1
+	dd if=/dev/block/mmcblk0 of=/tmp/original.mbr bs=512 count=1
 
 	for x in /voodoo/mbrs/samsung/* /voodoo/mbrs/voodoo/* ; do
 		if cmp $x /tmp/original.mbr; then
-			model=`echo $x | /bin/cut -d \/ -f4`
+			model=`echo $x | /bin/cut -d \/ -f5`
 			break
 		fi
 	done
@@ -118,6 +135,8 @@ set_partitions() {
 			fi
 		;;
 	esac
+	
+	cat /proc/partitions
 
 	current_partition_model=$1
 }
@@ -126,10 +145,15 @@ fast_wipe_ext4_and_build_rfs() {
 	# re-write an almost empty rfs partition
 	# fast wipe :
 	# a few first MB
-	xzcat /voodoo/rfs_partition/start.img.xz > /dev/block/mmcblk0p2
+	#xzcat /voodoo/rfs_partition/start.img.xz > /dev/block/mmcblk0p2
 	# 10MB around the 220MB limit
-	xzcat /voodoo/rfs_partition/+215M.img.xz \
-		| dd bs=1024 seek=$((215*1024)) of=/dev/block/mmcblk0p2
+	#xzcat /voodoo/rfs_partition/+215M.img.xz \
+	#	| dd bs=1024 seek=$((215*1024)) of=/dev/block/mmcblk0p2
+	
+	dd if=/dev/zero of=/dev/block/mmcblk0p2 bs=1024seek=$((215*1024)) count=$((1024*10))
+	/system/bin/fat.format -F 32 -S 4096 -s 4 /dev/block/mmcblk0p2
+	mount_data_rfs
+	dd if=/dev/zero of=/data/protection_file bs=1024 count=1
 }
 
 check_free() {
@@ -166,6 +190,7 @@ ext4_check() {
 			umount /data
 			return 0
 		fi
+		umount /data
 
 		mount_sdcard
 		say "data-wiped"
@@ -196,10 +221,11 @@ log() {
 
 say() {
 	# sound system lazy loader
-	load_soundsystem
-	# play !
-	madplay -A -4 -o wave:- "/voodoo/voices/$1.mp3" | \
-		 aplay -Dpcm.AndroidPlayback_Speaker --buffer-size=4096
+	if load_soundsystem; then 
+		# play !
+		madplay -A -4 -o wave:- "/voodoo/voices/$1.mp3" | \
+			 aplay -Dpcm.AndroidPlayback_Speaker --buffer-size=4096
+	 fi
 }
 
 load_soundsystem() {
@@ -209,16 +235,23 @@ load_soundsystem() {
 	# cache the voices from the SD to the ram
 	# with a size limit to prevent filling memory security expoit
 	if ! test -d /voodoo/voices; then
-		if test `du -s $sdcard/Voodoo/resources/voices/ | cut -d \/ -f1` -le 1024; then
-			# copy the voices, using cpio as a "cp" replacement (shrink)
-			cd $sdcard/Voodoo/resources
-			find voices/ | cpio -p /voodoo
-			cd /
-			log "voices loaded"
+		if test -d $sdcard/Voodoo/resources/voices/; then
+			if test "`du -s $sdcard/Voodoo/resources/voices/ | cut -d \/ -f1`" -le 1024; then
+				# copy the voices, using cpio as a "cp" replacement (shrink)
+				cd $sdcard/Voodoo/resources
+				find voices/ | cpio -p /voodoo
+				cd /
+				log "voices loaded"
+			else
+				log "error, voice diretory strangely big"
+				retcode=1
+			fi
 		else
-			log "error, voice diretory strangely big"
+			log "no voice directory, silent mode"
+			retcode=1
 		fi
 	fi
+	return $retcode
 }
 
 letsgo() {
@@ -228,18 +261,28 @@ letsgo() {
 	mount_sdcard
 	# create the Voodoo dir in sdcard if not here already
 	test -f $sdcard/Voodoo && rm $sdcard/Voodoo
-	mkdir $sdcard/Voodoo
+	mkdir $sdcard/Voodoo 2>/dev/null
 
 	log "running init !"
 
 	if test $debug_mode = 1; then
-		# copy some logs in it to help beta debugging
-		mkdir $sdcard/Voodoo/logs
+		# copy some logs in it to help debugging
+		mkdir $sdcard/Voodoo/logs 2>/dev/null
+
 		
 		cat /voodoo.log >> $sdcard/Voodoo/logs/voodoo.txt
 		echo >> $sdcard/Voodoo/logs/voodoo.txt
 		
-		cat /init.log > $sdcard/Voodoo/logs/init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
+		init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
+		cat /init.log > $sdcard/Voodoo/logs/$init_log_filename
+
+		# copy logs also on external SD if available
+		if mount_sdcard_ext; then
+			mkdir $sdcard_ext/Voodoo-logs 2>/dev/null
+			cat /init.log > $sdcard_ext/Voodoo-logs/$init_log_filename
+			umount $sdcard_ext
+		fi
+
 	else
 		# we are not in debug mode, let's wipe stuff to free some MB of memory !
 		rm -r /voodoo
@@ -255,7 +298,8 @@ letsgo() {
 	# on Froyo ramdisk, there is no etc to /etc/system symlink anymore
 	
 	# remove our tmp directory
-	rm -r /tmp
+	# FIXME
+	#rm -r /tmp
 	
 	umount /system
 	
@@ -287,10 +331,15 @@ ln -s voodoo/root/etc /etc
 # make a temporary tmp directory ;)
 mkdir /tmp
 mkdir /tmp/sdcard
+mkdir /tmp/sdcard_ext
+
+# we will need these directories
+mkdir /cache 2> /dev/null
+mkdir /dbdata 2> /dev/null 
+mkdir /data 2> /dev/null 
 
 # copy the sound configuration
 cat /system/etc/asound.conf > /etc/asound.conf
-
 
 # hardware-detection
 detect_supported_model
@@ -331,14 +380,14 @@ mount_sdcard
 
 # debug mode detection
 if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" ; then
-	echo "service adbd_voodoo_debug /sbin/adbd" >> /init.rc
-	echo "	root" >> /init.rc
-	echo "	enabled" >> /init.rc
+#	echo "service adbd_voodoo_debug /sbin/adbd" >> /init.rc
+#	echo "	root" >> /init.rc
+#	echo "	enabled" >> /init.rc
 	debug_mode=1
 fi
 
 
-if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
+if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" || test force_disable_lagfix = 1 ; then
 	umount $sdcard
 	
 	if ext4_check; then
