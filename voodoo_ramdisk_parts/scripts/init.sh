@@ -150,6 +150,7 @@ fast_wipe_ext4_and_build_rfs() {
 	mount_data_rfs
 	# FIXME: use the real maximum size available
 	dd if=/dev/zero of=/data/protection_file bs=1024 count=1
+	umount /data
 }
 
 check_free() {
