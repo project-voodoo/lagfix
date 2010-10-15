@@ -136,23 +136,19 @@ set_partitions() {
 		;;
 	esac
 	
-	cat /proc/partitions
-
 	current_partition_model=$1
 }
 
 fast_wipe_ext4_and_build_rfs() {
-	# re-write an almost empty rfs partition
-	# fast wipe :
-	# a few first MB
-	#xzcat /voodoo/rfs_partition/start.img.xz > /dev/block/mmcblk0p2
-	# 10MB around the 220MB limit
-	#xzcat /voodoo/rfs_partition/+215M.img.xz \
-	#	| dd bs=1024 seek=$((215*1024)) of=/dev/block/mmcblk0p2
-	
+	# clean the rests of the previous Ext4 with zeros
 	dd if=/dev/zero of=/dev/block/mmcblk0p2 bs=1024seek=$((215*1024)) count=$((1024*10))
+	
+	# format stock data partition as RFS using samsung utility
 	/system/bin/fat.format -F 32 -S 4096 -s 4 /dev/block/mmcblk0p2
+	
+	# mount the freshly formatted RFS partition and fill it by the protection_file
 	mount_data_rfs
+	# FIXME: use the real maximum size available
 	dd if=/dev/zero of=/data/protection_file bs=1024 count=1
 }
 
