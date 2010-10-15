@@ -141,10 +141,10 @@ set_partitions() {
 
 fast_wipe_ext4_and_build_rfs() {
 	# clean the rests of the previous Ext4 with zeros
-	dd if=/dev/zero of=/dev/block/mmcblk0p2 bs=1024seek=$((215*1024)) count=$((1024*10))
+	dd if=/dev/zero of=/dev/block/mmcblk0p2 bs=1024 seek=$((215*1024)) count=$((1024*10))
 	
 	# format stock data partition as RFS using samsung utility
-	/system/bin/fat.format -F 32 -S 4096 -s 4 /dev/block/mmcblk0p2
+	/system/bin/fat.format -S 4096 -s 4 /dev/block/mmcblk0p2
 	
 	# mount the freshly formatted RFS partition and fill it by the protection_file
 	mount_data_rfs
