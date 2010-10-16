@@ -25,7 +25,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.    #
 #                                                                             #
 ###############################################################################
-#set -x
+set -x
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin
 
 data_archive='/sdcard/voodoo_user-data.tar'
@@ -37,41 +37,40 @@ alias mount_sdcard="mount -t vfat -o utf8 /dev/block/mmcblk0p1 /sdcard"
 alias mount_cache="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl11 /cache"
 alias mount_dbdata="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl10 /dbdata"
 
-alias make_backup="tar cf $data_archive /data /dbdata "
+alias make_backup="tar cf $data_archive /data /dbdata"
 alias blkrrpart="sfdisk -R /dev/block/mmcblk0"
 
 
 model=""
 current_partition_model=""
+debug_mode=0
 detect_supported_model() {
 	# read the actual MBR
 	dd if=/dev/block/mmcblk0 of=/tmp/original.mbr bs=512 count=1
 
-	cd /res/mbr_stock
-	for x in * ; do
+	for x in /res/mbr_samsung/* /res/mbr_voodoo/* ; do
 		if cmp $x /tmp/original.mbr; then
-			model=$x
+			model=`basename $x`
 			continue
 		fi
 	done
 
 	log "model detected: $model"
-	cd /
 }
 
 set_partitions() {
 	case $1 in
 		samsung)
 			if test "$current_partition_model" != "samsung"; then
-				cat /res/mbr_stock/$model > /dev/block/mmcblk0
+				cat /res/mbr_samsung/$model > /dev/block/mmcblk0
 				log "set Samsung partitions"
 				blkrrpart 
 			fi
 		;;
-		custom)
-			if test "$current_partition_model" != "custom"; then
-				cat /res/mbr_fixed/$model > /dev/block/mmcblk0
-				log "set custom partitions"
+		voodoo)
+			if test "$current_partition_model" != "voodoo"; then
+				cat /res/mbr_voodoo/$model > /dev/block/mmcblk0
+				log "set voodoo partitions"
 				blkrrpart
 			fi
 		;;
@@ -92,15 +91,6 @@ fast_wipe_ext4_and_build_rfs() {
 		of=/dev/block/mmcblk0p2
 }
 
-make_backup_conditional() {
-	# create a backup only if there is not already one that looks valid here
-	if ! tar tf $data_archive  \
-			data/data/com.android.settings \
-			dbdata/databases/com.android.providers.settings; then
-		make_backup
-	fi
-}
-
 check_free() {
 	# read free space on internal SD
 	target_free=`df /sdcard | awk '/\/sdcard$/ {print $2}'`
@@ -118,7 +108,7 @@ check_free() {
 
 ext4_check() {
 	log "ext4 partition detection"
-	set_partitions custom
+	set_partitions voodoo
 	if dumpe2fs -h /dev/block/mmcblk0p4; then
 		log "ext4 partition detected"
 		set_partitions samsung
@@ -147,10 +137,9 @@ restore_backup() {
 }
 
 log() {
-	log="Voodoo lagfix: $1"
-	logs="$logs  /  "`date '+%Y-%m-%d %H:%M:%S '`$log
+	log="Voodoo: $1"
 	echo -e "\n  ###  $log\n" >> /init.log
-	echo $log >> /voodoo.log
+	echo `date '+%Y-%m-%d %H:%M:%S'` $log >> /voodoo.log
 }
 
 say() {
@@ -159,29 +148,82 @@ say() {
 }
 
 letsgo() {
-	log "running init !"
+	# paranoid security: prevent any data leak
+	rm $data_archive
 	# dump logs to the sdcard
 	mount_sdcard
-	echo -e "$logs\n" >> /sdcard/Voodoo/voodoo_log.txt
-	cp /init.log /sdcard/Voodoo
-	umount /sdcard
-	
-	# workaround for T-Mobile Vibrant crappy workarounds
-	if test "$model" = "16GB-tmo-vibrant"; then
-		cat /tmp/original.mbr > /dev/block/mmcblk0
+	# create the Voodoo dir in sdcard if not here already
+	if test -f /sdcard/Voodoo; then
+		rm /sdcard/Voodoo
+	fi
+	mkdir /sdcard/Voodoo
+
+	log "running init !"
+
+	if test $debug_mode; then
+		# copy some logs in it to help beta debugging
+		mkdir /sdcard/Voodoo/logs
+		
+		cat /voodoo.log >> /sdcard/Voodoo/logs/voodoo.txt
+		echo >> /sdcard/Voodoo/logs/voodoo.txt
+		
+		cp /init.log /sdcard/Voodoo/logs/init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
+	else
+		# we are not in debug mode, let's wipe stuff to free some MB of memory !
+		rm -r /usr
+		rm -r /res/voices
+		rm -r /res/mbr*
+		# clean debugs logs too
+		rm -r /sdcard/Voodoo/logs
 	fi
 
+	umount /sdcard
+	
 	exec /sbin/init
 }
 
 # proc and sys are  used 
 mount -t proc proc /proc
-mount -t sys sys /sys
+mount -t sysfs sys /sys
 
 
-# first thing: set the CPU to a fixed frequency for finky ones
-default_governor=`cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor`
-echo "performance" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+# create used devices nodes
+mkdir /dev/block
+mkdir /dev/snd
+
+# standard
+mknod /dev/null c 1 3
+mknod /dev/zero c 1 5
+
+# internal & external SD
+mknod /dev/block/mmcblk0 b 179 0
+mknod /dev/block/mmcblk0p1 b 179 1
+mknod /dev/block/mmcblk0p2 b 179 2
+mknod /dev/block/mmcblk0p3 b 179 3
+mknod /dev/block/mmcblk0p4 b 179 4
+mknod /dev/block/mmcblk1 b 179 8
+mknod /dev/block/stl1 b 138 1
+mknod /dev/block/stl2 b 138 2
+mknod /dev/block/stl3 b 138 3
+mknod /dev/block/stl4 b 138 4
+mknod /dev/block/stl5 b 138 5
+mknod /dev/block/stl6 b 138 6
+mknod /dev/block/stl7 b 138 7
+mknod /dev/block/stl8 b 138 8
+mknod /dev/block/stl9 b 138 9
+mknod /dev/block/stl10 b 138 10
+mknod /dev/block/stl11 b 138 11
+mknod /dev/block/stl12 b 138 12
+
+# soundcard
+mknod /dev/snd/controlC0 c 116 0
+mknod /dev/snd/controlC1 c 116 32
+mknod /dev/snd/pcmC0D0c c 116 24
+mknod /dev/snd/pcmC0D0p c 116 16
+mknod /dev/snd/pcmC1D0c c 116 56
+mknod /dev/snd/pcmC1D0p c 116 48
+mknod /dev/snd/timer c 116 33
+
 
 # insmod required modules
 insmod /lib/modules/fsr.ko
@@ -216,8 +258,6 @@ if test -f /cache/recovery/command; then
 		# recovery will find Samsung's partition, will wipe them and be happy !
 		fast_wipe_ext4_and_build_rfs
 		umount /cache
-		# restore the default CPU governor
-		echo $default_governor > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 		letsgo
 	fi
 fi
@@ -227,6 +267,17 @@ umount /cache
 
 # first : read instruction from sdcard and do it !
 mount_sdcard
+
+# debug mode detection
+if test `find /sdcard/Voodoo/ -iname 'enable*debug*' | wc -l` -ge 1 ; then
+	ln -sf init-debug.rc init.rc
+	debug_mode=1
+else
+	ln -sf init-standard.rc init.rc
+fi
+
+
+
 if test `find /sdcard/Voodoo/ -iname 'disable*lagfix*' | wc -l` -ge 1 ; then
 	umount /sdcard
 	
@@ -236,7 +287,7 @@ if test `find /sdcard/Voodoo/ -iname 'disable*lagfix*' | wc -l` -ge 1 ; then
 		say "to-rfs"
 		# ext4 partition detected, let's convert it back to rfs :'(
 		# mount ressources
-		set_partitions custom
+		set_partitions voodoo
 		mount_data_ext4
 		mount_dbdata
 		mount_sdcard
@@ -253,7 +304,7 @@ if test `find /sdcard/Voodoo/ -iname 'disable*lagfix*' | wc -l` -ge 1 ; then
 		fi
 		
 		say "step1"&
-		make_backup_conditional
+		make_backup
 		
 		# umount mmcblk0 ressources
 		umount /dbdata
@@ -290,6 +341,7 @@ if test `find /sdcard/Voodoo/ -iname 'disable*lagfix*' | wc -l` -ge 1 ; then
 
 	fi
 
+	compatibility_hacks lagfix-disabled
 	# now we know that /data is in RFS anyway. let's fire init !
 	letsgo
 
@@ -328,11 +380,10 @@ if ! ext4_check ; then
 	log "run the backup operation"
 	if ! test -f /data/protection_file; then
 		say "step1"&
-		make_backup_conditional
+		make_backup
 	else
 		# something's wrong :(
 		log "error: protection file present in rfs but no ext4 data"
-		log "let's hope that a backup is still present"
 	fi
 	
 	# umount mmcblk0 ressources
@@ -345,14 +396,13 @@ if ! ext4_check ; then
 		| dd ibs=1024 count=5k of=/dev/block/mmcblk0p2
 	
 	# set our partitions back 
-	set_partitions custom
+	set_partitions voodoo
 
 	# build the ext4 filesystem
 	log "build the ext4 filesystem"
 	
 	# (empty) /etc/mtab is required for this mkfs.ext4
-	mkfs.ext4 -F -E lazy_itable_init=1 -O sparse_super,uninit_bg \
-		/dev/block/mmcblk0p4
+	mkfs.ext4 -F -O sparse_super /dev/block/mmcblk0p4
 	# force check the filesystem after 100 mounts or 100 days
 	tune2fs -c 100 -i 100d -m 0 /dev/block/mmcblk0p4
 		
@@ -373,7 +423,7 @@ if ! ext4_check ; then
 else
 
 	# seems that we have a ext4 partition ;) just mount it
-	set_partitions custom
+	set_partitions voodoo
 	log "protected ext4 detected, mounting ext4 /data !"
 	e2fsck -p /dev/block/mmcblk0p4
 	mount_data_ext4

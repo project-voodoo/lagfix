@@ -1,0 +1,16 @@
+#!/bin/sh
+# Voodoo optional compatibility hacks
+
+
+case $1 in
+	lagfix-disabled)
+	# make ClockWorkMod recovery work if we are in pure stock RFS mode
+	# do that with creating fake idiot useless init.rc used only
+	# when you run on the dev board called "smdkc110"
+	# but that's how ClockWorkMod / Rom manager detects Galaxy S so...
+	> /init.smdkc110.rc
+	> /init.smdkc110.sh
+	;;
+esac
+
+
