@@ -30,6 +30,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.    #
 #                                                                             #
 ###############################################################################
+exec > /init.log 2>&1
 
 set -x
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin:/system/sbin
@@ -384,7 +385,7 @@ if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" ; then
 fi
 
 
-if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" || test force_disable_lagfix = 1 ; then
+if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" || test force_disable_lagfix ; then
 	umount $sdcard
 	
 	if ext4_check; then
