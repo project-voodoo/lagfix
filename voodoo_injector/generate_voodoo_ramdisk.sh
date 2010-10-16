@@ -54,6 +54,5 @@ ln -s ../bin/busybox sbin/insmod
 
 
 # create the main init symlink
-ln -s voodoo/scripts/init.sh init
-#ln -s init_samsung init
+ln -s voodoo/scripts/init_logger.sh init
 

@@ -30,10 +30,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.    #
 #                                                                             #
 ###############################################################################
-
-# log the script execution
-exec > /init.log 2>&1
-
 set -x
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
 
