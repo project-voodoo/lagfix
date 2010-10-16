@@ -36,9 +36,10 @@ PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
 sdcard='/tmp/sdcard'
 sdcard_ext='/tmp/sdcard_ext'
 data_archive="$sdcard/voodoo_user-data.cpio"
+data_partition="/dev/block/mmcblk0p2"
 
-alias mount_data_ext4="mount -t ext4 -o noatime,nodiratime /dev/block/mmcblk0p4 /data"
-alias mount_data_rfs="mount -t rfs -o nosuid,nodev,check=no /dev/block/mmcblk0p2 /data"
+alias mount_data_ext4="mount -t ext4 -o noatime,nodiratime $data_partition /data"
+alias mount_data_rfs="mount -t rfs -o nosuid,nodev,check=no $data_partition /data"
 alias mount_cache="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl11 /cache"
 alias mount_dbdata="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl10 /dbdata"
 alias check_dbdata="fsck_msdos -y /dev/block/stl10"
@@ -102,53 +103,19 @@ load_stage() {
 	return $retcode
 }
 
-detect_supported_model() {
-	# read the actual MBR
+detect_supported_model_and_setup_device_names() {
+	 # read the actual MBR
 	dd if=/dev/block/mmcblk0 of=/tmp/original.mbr bs=512 count=1
 
-	for x in /voodoo/mbrs/samsung/* /voodoo/mbrs/voodoo/* ; do
+	for x in /voodoo/mbrs/* ; do
 		if cmp $x /tmp/original.mbr; then
-			model=`echo $x | /bin/cut -d \/ -f5`
+			model=`echo $x | /bin/cut -d \/ -f4`
 			break
 		fi
 	done
 
 	log "model detected: $model"
-}
-
-set_partitions() {
-	case $1 in
-		samsung)
-			if test "$current_partition_model" != "samsung"; then
-				cat /voodoo/mbrs/samsung/$model > /dev/block/mmcblk0
-				log "set Samsung partitions"
-				blkrrpart 
-			fi
-		;;
-		voodoo)
-			if test "$current_partition_model" != "voodoo"; then
-				cat /voodoo/mbrs/voodoo/$model > /dev/block/mmcblk0
-				log "set voodoo partitions"
-				blkrrpart
-			fi
-		;;
-	esac
-	
-	current_partition_model=$1
-}
-
-fast_wipe_ext4_and_build_rfs() {
-	# clean the rests of the previous Ext4 with zeros
-	dd if=/dev/zero of=/dev/block/mmcblk0p2 bs=1024 seek=$((215*1024)) count=$((1024*10))
-	
-	# format stock data partition as RFS using samsung utility
-	/system/bin/fat.format -S 4096 -s 4 /dev/block/mmcblk0p2
-	
-	# mount the freshly formatted RFS partition and fill it by the protection_file
-	mount_data_rfs
-	# FIXME: use the real maximum size available
-	dd if=/dev/zero of=/data/protection_file bs=1024 count=1
-	umount /data
+	test $model = "" && return 1
 }
 
 check_free() {
@@ -174,25 +141,10 @@ check_free() {
 
 ext4_check() {
 	log "ext4 partition detection"
-	set_partitions voodoo
-	if test "`echo $(blkid /dev/block/mmcblk0p4) | cut -d' ' -f3 \
+	if test "`echo $(blkid $data_partition) | cut -d' ' -f3 \
 		| cut -d'"' -f2`" = "ext4"; then
 		log "ext4 partition detected"
-		set_partitions samsung
-		mount_data_rfs
-		if test -f /data/protection_file; then
-			log "protection file present"
-			umount /data
-			return 0
-		fi
-		umount /data
-
-		mount_sdcard
-		say "data-wiped"
-		umount $sdcard
-		
-		log "ext4 present but protection file absent"
-		return 1
+		return 0
 	fi
 	log "no ext4 partition detected"
 	return 1
@@ -210,7 +162,7 @@ restore_backup() {
 
 log() {
 	log="Voodoo: $1"
-	echo -e "\n  ###  $log\n" >> /init.log
+	echo -e "\n  ###  $log\n" >> /voodoo_init.log
 	echo `date '+%Y-%m-%d %H:%M:%S'` $log >> /voodoo.log
 }
 
@@ -250,8 +202,6 @@ load_soundsystem() {
 }
 
 letsgo() {
-	# restore stock partitions
-	set_partitions samsung
 	# paranoid security: prevent any data leak
 	test -f $data_archive && rm -v $data_archive
 	# dump logs to the sdcard
@@ -271,12 +221,12 @@ letsgo() {
 		echo >> $sdcard/Voodoo/logs/voodoo.txt
 		
 		init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
-		cat /init.log > $sdcard/Voodoo/logs/$init_log_filename
+		cat /voodoo_init.log > $sdcard/Voodoo/logs/$init_log_filename
 
 		# copy logs also on external SD if available
 		if mount_sdcard_ext; then
 			mkdir $sdcard_ext/Voodoo-logs 2>/dev/null
-			cat /init.log > $sdcard_ext/Voodoo-logs/$init_log_filename
+			cat /voodoo_init.log > $sdcard_ext/Voodoo-logs/$init_log_filename
 			umount $sdcard_ext
 		fi
 
@@ -319,8 +269,15 @@ insmod /lib/modules/fsr_stl.ko
 insmod /lib/modules/rfs_glue.ko
 insmod /lib/modules/rfs_fat.ko
 
-# new in beta5, using /system
-mount -t rfs -o ro,check=no /dev/block/stl9 /system 
+# using what /system partition has to offer
+mount -t rfs -o rw,check=no /dev/block/stl9 /system
+
+# detect the model using the system build.prop
+if ! detect_supported_model_and_setup_device_names; then
+	# the hardware model is unknown
+	log "model not detected"
+	exec /init_samsung
+fi
 
 # use Voodoo etc during the script
 ln -s voodoo/root/etc /etc
@@ -338,16 +295,6 @@ mkdir /data 2> /dev/null
 # copy the sound configuration
 cat /system/etc/asound.conf > /etc/asound.conf
 
-# hardware-detection
-detect_supported_model
-if test "$model" = ""  ; then
-	# model not supported
-	log "this model is not supported"
-	mount_data_rfs
-	letsgo
-fi
-
-
 # unpack myself : STAGE 2
 load_stage 2
 
@@ -361,9 +308,7 @@ if test -f /cache/recovery/command; then
 		log "MASTER_CLEAR mode"
 		say "factory-reset"
 		# if we are in this mode, we still have to wipe ext4 partition start
-		set_partitions samsung
-		# recovery will find Samsung's partition, will wipe them and be happy !
-		fast_wipe_ext4_and_build_rfs
+		wipe_ext4
 		umount /cache
 		letsgo
 	fi
@@ -392,7 +337,6 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		log "lag fix disabled and ext4 detected"
 		# ext4 partition detected, let's convert it back to rfs :'(
 		# mount resources
-		set_partitions voodoo
 		mount_data_ext4
 		mount_dbdata
 		mount_sdcard
@@ -417,10 +361,7 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		umount $sdcard
 		umount /data
 
-		# restore Samsung's partition layout on the internal SD
-		set_partitions samsung
-		
-		fast_wipe_ext4_and_build_rfs
+		wipe_ext4
 
 		# remove the gigantic protection_file
 		log "mount rfs /data"
@@ -439,9 +380,8 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 	else
 
 		# in this case, we did not detect any valid ext4 partition
-		# hopefully this is because mmcblk0p2 contains a valid rfs /data
+		# hopefully this is because $data_partition contains a valid rfs /data
 		log "lag fix disabled, rfs present"
-		set_partitions samsung
 		log "mount /data as rfs"
 		mount_data_rfs
 
@@ -460,10 +400,7 @@ if ! ext4_check ; then
 
 	log "no protected ext4 partition detected"
 
-	# no protected ext4 partition detected, we will convert to ext4
-	# for that we first need to restore Samsung's partition table
-	set_partitions samsung
-	
+	# no ext4 filesystem detected, we will convert to ext4
 	# mount resources we need
 	log "mount resources to backup"
 	mount_data_rfs
@@ -476,7 +413,6 @@ if ! ext4_check ; then
 	if ! check_free; then
 		log "not enough space to migrate from rfs to ext4"
 		say "cancel-no-space"
-		set_partitions samsung
 		mount_data_rfs
 		letsgo
 	fi
@@ -495,21 +431,18 @@ if ! ext4_check ; then
 	umount $sdcard
 	umount /data
 	
-	# write the fake protection file on mmcblk0p2, just in case
-	log "fast write the giant protection file on mmcblk0p2" 
-	fast_wipe_ext4_and_build_rfs
+	# write the fake protection file on the data partition, just in case
+	log "fast write the giant protection file on $data_partition" 
+	wipe_ext4
 	
-	# set our partitions back 
-	set_partitions voodoo
-
 	# build the ext4 filesystem
 	log "build the ext4 filesystem"
 	
 	# (empty) /etc/mtab is required for this mkfs.ext4
 	cat /etc/mke2fs.conf
-	mkfs.ext4 -F -O sparse_super /dev/block/mmcblk0p4
+	mkfs.ext4 -F -O sparse_super $data_partition
 	# force check the filesystem after 100 mounts or 100 days
-	tune2fs -c 100 -i 100d -m 0 /dev/block/mmcblk0p4
+	tune2fs -c 100 -i 100d -m 0 $data_partition
 		
 	mount_data_ext4
 	mount_sdcard
@@ -528,9 +461,8 @@ if ! ext4_check ; then
 else
 
 	# seems that we have a ext4 partition ;) just mount it
-	set_partitions voodoo
 	log "protected ext4 detected, mounting ext4 /data !"
-	e2fsck -p /dev/block/mmcblk0p4
+	e2fsck -p $data_partition
 	mount_data_ext4
 
 fi
