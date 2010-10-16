@@ -26,12 +26,14 @@ cd $2
 
 mv init init_samsung
 
-# make sure su binary is fully suid
-chmod 06755 sbin/su
-
 # copy ramdisk stuff
 mkdir voodoo 2>/dev/null
 cp -ax $my_pwd/$3/*  voodoo/
+
+
+# make sure su binary (Superuser.apk) is fully suid
+chmod 06755 voodoo/root/bin/su
+
 
 # empty directories, probably not in gits
 mkdir dev 2>/dev/null
