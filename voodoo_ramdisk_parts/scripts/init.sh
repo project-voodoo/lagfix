@@ -36,7 +36,6 @@ PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
 sdcard='/tmp/sdcard'
 sdcard_ext='/tmp/sdcard_ext'
 data_archive="$sdcard/voodoo_user-data.cpio"
-data_partition="/dev/block/mmcblk0p2"
 
 alias mount_data_ext4="mount -t ext4 -o noatime,nodiratime $data_partition /data"
 alias mount_data_rfs="mount -t rfs -o nosuid,nodev,check=no $data_partition /data"
@@ -44,8 +43,8 @@ alias mount_cache="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl11 /cache
 alias mount_dbdata="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl10 /dbdata"
 alias check_dbdata="fsck_msdos -y /dev/block/stl10"
 
-alias mount_sdcard="mount -t vfat -o utf8 /dev/block/mmcblk0p1 $sdcard"
-alias mount_sdcard_ext="mount -t vfat -o utf8 /dev/block/mmcblk1 $sdcard_ext"
+alias mount_sdcard="mount -t vfat -o utf8 $sdcard_partition $sdcard"
+alias mount_sdcard_ext="mount -t vfat -o utf8 $sdcard_ext_partition $sdcard_ext"
 
 alias make_backup="find /data /dbdata | cpio -H newc -o > $data_archive"
 alias blkrrpart="hdparm -z /dev/block/mmcblk0"
@@ -114,8 +113,14 @@ detect_supported_model_and_setup_device_names() {
 		fi
 	done
 
-	log "model detected: $model"
-	test $model = "" && return 1
+	if test $model != ""; then 
+		log "model detected: $model"
+		# source the config file with setup data_partition, 
+		# sdcard_partition and sdcard_ext_partition
+		. "/voodoo/configs/devices_$model"
+	else
+		return 1
+	fi
 }
 
 check_free() {

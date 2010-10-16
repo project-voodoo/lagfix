@@ -28,7 +28,7 @@ mv init init_samsung
 
 # copy ramdisk stuff
 mkdir voodoo 2>/dev/null
-cp -ax $my_pwd/$3/*  voodoo/
+cp -ax $my_pwd/$3/* voodoo/
 
 
 # make sure su binary (Superuser.apk) is fully suid
