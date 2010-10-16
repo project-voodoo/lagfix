@@ -30,10 +30,12 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.    #
 #                                                                             #
 ###############################################################################
+
+# log the script execution
 exec > /init.log 2>&1
 
 set -x
-PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin:/system/sbin
+PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
 
 sdcard='/tmp/sdcard'
 sdcard_ext='/tmp/sdcard_ext'
@@ -52,7 +54,6 @@ alias make_backup="find /data /dbdata | cpio -H newc -o > $data_archive"
 alias blkrrpart="hdparm -z /dev/block/mmcblk0"
 
 debug_mode=1
-force_disable_lagfix=1
 
 load_stage() {
 	# don't reload a stage already in memory
@@ -253,6 +254,8 @@ load_soundsystem() {
 }
 
 letsgo() {
+	# restore stock partitions
+	set_partitions samsung
 	# paranoid security: prevent any data leak
 	test -f $data_archive && rm -v $data_archive
 	# dump logs to the sdcard
@@ -385,7 +388,7 @@ if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" ; then
 fi
 
 
-if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" || test force_disable_lagfix ; then
+if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 	umount $sdcard
 	
 	if ext4_check; then
