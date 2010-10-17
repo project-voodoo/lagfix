@@ -37,19 +37,38 @@ sdcard='/tmp/sdcard'
 sdcard_ext='/tmp/sdcard_ext'
 data_archive="$sdcard/voodoo_user-data.cpio"
 
-alias mount_data_ext4="mount -t ext4 -o noatime,nodiratime $data_partition /data"
-alias mount_data_rfs="mount -t rfs -o nosuid,nodev,check=no $data_partition /data"
-alias mount_cache="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl11 /cache"
-alias mount_dbdata="mount -t rfs -o nosuid,nodev,check=no /dev/block/stl10 /dbdata"
 alias check_dbdata="fsck_msdos -y /dev/block/stl10"
-
-alias mount_sdcard="mount -t vfat -o utf8 $sdcard_partition $sdcard"
-alias mount_sdcard_ext="mount -t vfat -o utf8 $sdcard_ext_partition $sdcard_ext"
-
 alias make_backup="find /data /dbdata | cpio -H newc -o > $data_archive"
-alias blkrrpart="hdparm -z /dev/block/mmcblk0"
+
 
 debug_mode=1
+
+mount_() {
+	case $1 in
+		cache)
+			mount -t rfs -o nosuid,nodev,check=no /dev/block/stl11 /cache
+		;;
+		dbdata)
+			mount -t rfs -o nosuid,nodev,check=no /dev/block/stl10 /dbdata
+		;;
+		cache)
+			mount -t rfs -o nosuid,nodev,check=no /dev/block/stl11 /cache
+		;;
+		data_ext4)
+			mount -t ext4 -o noatime,nodiratime $data_partition /data
+			> /tmp/ext4_mounted
+		;;
+		data_rfs)
+			mount -t rfs -o nosuid,nodev,check=no $data_partition /data
+		;;
+		sdcard)
+			mount -t vfat -o utf8 $sdcard_partition $sdcard
+		;;
+		sdcard_ext)
+			mount -t vfat -o utf8 $sdcard_ext_partition $sdcard_ext
+		;;
+	esac
+}
 
 load_stage() {
 	# don't reload a stage already in memory
@@ -144,15 +163,31 @@ check_free() {
 	test $target_free -ge $space_needed
 }
 
-ext4_check() {
-	log "ext4 partition detection"
+detect_valid_ext4_filesystem() {
+	log "ext4 filesystem detection"
 	if test "`echo $(blkid $data_partition) | cut -d' ' -f3 \
 		| cut -d'"' -f2`" = "ext4"; then
+		# blkid find an ext4 partition. but is it real ?
+		# if the data partition mounts as rfs, it means
+		# that this ext4 partition is just lost bits still here
+		if mount_ data_rfs; then
+			log "ext4 bits found but from an invalid and corrupted filesystem"
+			return 1
+		fi
 		log "ext4 partition detected"
 		return 0
 	fi
 	log "no ext4 partition detected"
 	return 1
+}
+
+wipe_data_filesystem() {
+	# ext4 is very hard to wipe due to it's superblock which provide
+	# much security, so we wipe the start of the partition (3MB)
+	# wich does enouch to prevent blkid to detect Ext4.
+	# RFS is also seriously hit by 3MB of zeros ;)
+
+	dd if=/dev/zero of=$data_partition bs=1024 count=$((3 * 1024))
 }
 
 restore_backup() {
@@ -207,10 +242,13 @@ load_soundsystem() {
 }
 
 letsgo() {
+	
+	alias	
+	
 	# paranoid security: prevent any data leak
 	test -f $data_archive && rm -v $data_archive
 	# dump logs to the sdcard
-	mount_sdcard
+	mount_ sdcard
 	# create the Voodoo dir in sdcard if not here already
 	test -f $sdcard/Voodoo && rm $sdcard/Voodoo
 	mkdir $sdcard/Voodoo 2>/dev/null
@@ -229,7 +267,7 @@ letsgo() {
 		cat /voodoo_init.log > $sdcard/Voodoo/logs/$init_log_filename
 
 		# copy logs also on external SD if available
-		if mount_sdcard_ext; then
+		if mount_ sdcard_ext; then
 			mkdir $sdcard_ext/Voodoo-logs 2>/dev/null
 			cat /voodoo_init.log > $sdcard_ext/Voodoo-logs/$init_log_filename
 			umount $sdcard_ext
@@ -248,10 +286,6 @@ letsgo() {
 	# set the etc to Android standards
 	rm /etc
 	# on Froyo ramdisk, there is no etc to /etc/system symlink anymore
-	
-	# remove our tmp directory
-	# FIXME
-	#rm -r /tmp
 	
 	umount /system
 	
@@ -277,6 +311,11 @@ insmod /lib/modules/rfs_fat.ko
 # using what /system partition has to offer
 mount -t rfs -o rw,check=no /dev/block/stl9 /system
 
+# make a temporary tmp directory ;)
+mkdir /tmp
+mkdir /tmp/sdcard
+mkdir /tmp/sdcard_ext
+
 # detect the model using the system build.prop
 if ! detect_supported_model_and_setup_device_names; then
 	# the hardware model is unknown
@@ -284,13 +323,17 @@ if ! detect_supported_model_and_setup_device_names; then
 	exec /init_samsung
 fi
 
+# device specific aliases
+#alias mount_data_ext4="mount -t ext4 -o noatime,nodiratime $data_partition /data"
+#alias mount_data_rfs="mount -t rfs -o nosuid,nodev,check=no $data_partition /data"
+
+#alias mount_sdcard="mount -t vfat -o utf8 $sdcard_partition $sdcard"
+#alias mount_sdcard_ext="mount -t vfat -o utf8 $sdcard_ext_partition $sdcard_ext"
+
+
 # use Voodoo etc during the script
 ln -s voodoo/root/etc /etc
 
-# make a temporary tmp directory ;)
-mkdir /tmp
-mkdir /tmp/sdcard
-mkdir /tmp/sdcard_ext
 
 # we will need these directories
 mkdir /cache 2> /dev/null
@@ -306,7 +349,7 @@ load_stage 2
 # detect the MASTER_CLEAR intent command
 # this append when you choose to wipe everything from the phone settings,
 # or when you type *2767*3855# (Factory Reset, datas + SDs wipe)
-mount_cache
+mount_ cache
 if test -f /cache/recovery/command; then
 
 	if test `cat /cache/recovery/command | cut -d '-' -f 3` = 'wipe_data'; then
@@ -323,7 +366,7 @@ umount /cache
 
 
 # first : read instruction from sdcard and do it !
-mount_sdcard
+mount_ sdcard
 
 # debug mode detection
 if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" ; then
@@ -337,17 +380,17 @@ fi
 if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 	umount $sdcard
 	
-	if ext4_check; then
+	if detect_valid_ext4_filesystem; then
 
-		log "lag fix disabled and ext4 detected"
+		log "lag fix disabled and Ext4 detected"
 		# ext4 partition detected, let's convert it back to rfs :'(
 		# mount resources
-		mount_data_ext4
-		mount_dbdata
-		mount_sdcard
+		mount_ data_ext4
+		mount_ dbdata
+		mount_ sdcard
 		say "to-rfs"
 		
-		log "run backup of ext4 /data"
+		log "run backup of Ext4 /data"
 		
 		# check if there is enough free space for migration or cancel
 		# and boot
@@ -366,15 +409,14 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		umount $sdcard
 		umount /data
 
-		wipe_ext4
+		# wipe Ext4 filesystem
+		log "wipe Ext4 filesystem before formatin $data_partition as RFS"
+		wipe_data_filesystem
 
-		# remove the gigantic protection_file
-		log "mount rfs /data"
-		mount_data_rfs
-		rm /data/protection_file
+		fat.format -F 32 -S 4096 -s 4 $data_partition
 
 		# restore the data archived
-		mount_sdcard
+		mount_ sdcard
 		log "restore backup on rfs /data"
 		say "step2"
 		restore_backup
@@ -388,7 +430,7 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		# hopefully this is because $data_partition contains a valid rfs /data
 		log "lag fix disabled, rfs present"
 		log "mount /data as rfs"
-		mount_data_rfs
+		mount_ data_rfs
 
 	fi
 
@@ -401,16 +443,16 @@ umount $sdcard
 # Voodoo lagfix is enabled
 # detect if the data partition is in ext4 format
 log "lag fix enabled"
-if ! ext4_check ; then
+if ! detect_valid_ext4_filesystem ; then
 
-	log "no protected ext4 partition detected"
+	log "no valid ext4 partition detected"
 
 	# no ext4 filesystem detected, we will convert to ext4
 	# mount resources we need
 	log "mount resources to backup"
-	mount_data_rfs
-	mount_dbdata
-	mount_sdcard
+	mount_ data_rfs
+	mount_ dbdata
+	mount_ sdcard
 	say "to-ext4"
 
 	# check if there is enough free space for migration or cancel
@@ -418,7 +460,7 @@ if ! ext4_check ; then
 	if ! check_free; then
 		log "not enough space to migrate from rfs to ext4"
 		say "cancel-no-space"
-		mount_data_rfs
+		mount_ data_rfs
 		letsgo
 	fi
 
@@ -437,8 +479,8 @@ if ! ext4_check ; then
 	umount /data
 	
 	# write the fake protection file on the data partition, just in case
-	log "fast write the giant protection file on $data_partition" 
-	wipe_ext4
+	log "wipe previous RFS filesystem $data_partition" 
+	wipe_data_filesystem
 	
 	# build the ext4 filesystem
 	log "build the ext4 filesystem"
@@ -449,8 +491,8 @@ if ! ext4_check ; then
 	# force check the filesystem after 100 mounts or 100 days
 	tune2fs -c 100 -i 100d -m 0 $data_partition
 		
-	mount_data_ext4
-	mount_sdcard
+	mount_ data_ext4
+	mount_ sdcard
 
 	# restore the data archived
 	say "step2"
@@ -466,7 +508,7 @@ if ! ext4_check ; then
 else
 
 	# seems that we have a ext4 partition ;) just mount it
-	log "protected ext4 detected, mounting ext4 /data !"
+	log "valid ext4 detected, mounting ext4 /data !"
 	e2fsck -p $data_partition
 	mount_data_ext4
 
