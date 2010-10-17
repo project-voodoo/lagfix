@@ -1,6 +1,9 @@
 #!/bin/sh
 
-cd output/target
+my_pwd=`pwd`
+DEST=$my_pwd"/output/stage3-sound.cpio.lzma"
+
+cd target
 
 find \
         usr/lib/libasound* \
@@ -10,5 +13,6 @@ find \
         usr/lib/libmad* \
         usr/lib/libid3* \
         usr/lib/libz* \
-        | cpio -v -H newc -o | lzma -9  > stage3-sound.cpio.lzma
+        | cpio -v -H newc -o | lzma -9  > $DEST
 
+ls -lh $DEST

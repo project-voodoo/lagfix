@@ -1,6 +1,9 @@
 #!/bin/sh
 
-cd output/target
+my_pwd=`pwd`
+DEST=$my_pwd"/output/stage2.cpio.lzma"
+
+cd target
 
 find \
         etc/mke2fs.conf \
@@ -17,5 +20,6 @@ find \
         usr/lib/libss.so* \
         usr/lib/libe2p.* \
         usr/lib/libcom_err.* \
-        | cpio -v -H newc -o | lzma -9  > stage2.cpio.lzma
+        | cpio -v -H newc -o | lzma -9  > $DEST
 
+ls -lh $DEST

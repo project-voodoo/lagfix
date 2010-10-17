@@ -20,6 +20,10 @@ my_pwd=`pwd`
 # create the destination directory
 mkdir $2 2>/dev/null
 
+
+# test if stage2 and at least stage3-sound exist
+if test -f lagfix
+
 # copy the ramdisk source to the voodoo ramdisk directory
 cp -ax $1/* $2/
 cd $2
