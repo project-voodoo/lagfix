@@ -373,7 +373,7 @@ fi
 
 if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 	
-#	if detect_valid_ext4_filesystem; then
+	if detect_valid_ext4_filesystem; then
 
 		log "lag fix disabled and Ext4 detected"
 		# ext4 partition detected, let's convert it back to rfs :'(
