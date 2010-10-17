@@ -22,7 +22,13 @@ mkdir $2 2>/dev/null
 
 
 # test if stage2 and at least stage3-sound exist
-if test -f lagfix
+# FIXME: paths madness
+cd lagfix/stages_builder/stages
+if ! test -f stage2* || ! test -f stage3-sound*; then
+	echo "\n\n # Error, please build the Voodoo lagfix stages first\n\n"
+	exit 1
+fi
+cd -
 
 # copy the ramdisk source to the voodoo ramdisk directory
 cp -ax $1/* $2/

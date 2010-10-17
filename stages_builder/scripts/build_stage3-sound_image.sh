@@ -1,7 +1,7 @@
 #!/bin/sh
 
 my_pwd=`pwd`
-DEST=$my_pwd"/output/stage3-sound.cpio.lzma"
+DEST=$my_pwd"/stages/stage3-sound.cpio.lzma"
 
 cd target
 
