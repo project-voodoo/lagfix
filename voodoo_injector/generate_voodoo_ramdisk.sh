@@ -77,6 +77,11 @@ cpio -di < ../../../lagfix/stages_builder/stages/stage1.cpio
 
 find -name '.git*' -exec rm {} \;
 
+for x in ../../../lagfix/stages_builder/stages/*.lzma; do
+	# generate signatures at the same time
+	sha1sum "$x" | cut -d' ' -f1 > voodoo/signatures/`basename "$x" .cpio.lzma`	
+done
+
 
 # copy the uncompressed ramdisk to the compressed before decompressing
 # stage images in it
@@ -88,7 +93,7 @@ cp -a uncompressed compressed
 # extract stages directly
 cd uncompressed
 for x in ../../../lagfix/stages_builder/stages/*.lzma; do
-	lzcat "$x" | cpio -di 
+	lzcat "$x" | cpio -di
 done
 cd ..
 
