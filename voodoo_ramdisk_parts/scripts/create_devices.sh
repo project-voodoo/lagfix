@@ -4,6 +4,7 @@
 # standard
 mknod /dev/null c 1 3
 mknod /dev/zero c 1 5
+mknod /dev/urandom c 1 9
 
 # internal & external SD
 mknod /dev/block/mmcblk0 b 179 0
