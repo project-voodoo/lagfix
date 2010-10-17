@@ -33,8 +33,8 @@
 set -x
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
 
-sdcard='/tmp/sdcard'
-sdcard_ext='/tmp/sdcard_ext'
+sdcard='/voodoo/tmp/sdcard'
+sdcard_ext='/voodoo/tmp/sdcard_ext'
 data_archive="$sdcard/voodoo_user-data.cpio"
 
 alias check_dbdata="fsck_msdos -y /dev/block/stl10"
@@ -56,7 +56,6 @@ mount_() {
 		;;
 		data_ext4)
 			mount -t ext4 -o noatime,nodiratime $data_partition /data
-			> /tmp/ext4_mounted
 		;;
 		data_rfs)
 			mount -t rfs -o nosuid,nodev,check=no $data_partition /data
@@ -72,7 +71,7 @@ mount_() {
 
 load_stage() {
 	# don't reload a stage already in memory
-	if ! test -f /tmp/stage$1_loaded; then
+	if ! test -f /voodoo/tmp/stage$1_loaded; then
 		case $1 in
 			2)
 				stagefile="/voodoo/stage2.cpio.xz"
@@ -116,17 +115,17 @@ load_stage() {
 
 			;;
 		esac
-		> /tmp/stage$1_loaded
+		> /voodoo/tmp/stage$1_loaded
 	fi
 	return $retcode
 }
 
 detect_supported_model_and_setup_device_names() {
 	 # read the actual MBR
-	dd if=/dev/block/mmcblk0 of=/tmp/original.mbr bs=512 count=1
+	dd if=/dev/block/mmcblk0 of=/voodoo/tmp/original.mbr bs=512 count=1
 
 	for x in /voodoo/mbrs/* ; do
-		if cmp $x /tmp/original.mbr; then
+		if cmp $x /voodoo/tmp/original.mbr; then
 			model=`echo $x | /bin/cut -d \/ -f4`
 			break
 		fi
@@ -174,10 +173,10 @@ detect_valid_ext4_filesystem() {
 			log "ext4 bits found but from an invalid and corrupted filesystem"
 			return 1
 		fi
-		log "ext4 partition detected"
+		log "ext4 filesystem detected"
 		return 0
 	fi
-	log "no ext4 partition detected"
+	log "no ext4 filesystem detected"
 	return 1
 }
 
@@ -196,7 +195,7 @@ restore_backup() {
 	# extract from the backup,
 	# with dirty workaround to fix battery level inaccuracy
 	# then remove the backup file if everything went smooth
-	cat $data_archive | cpio -div && rm $data_archive
+	cpio -div < $data_archive && rm $data_archive
 	rm /data/system/batterystats.bin
 }
 
@@ -243,8 +242,6 @@ load_soundsystem() {
 
 letsgo() {
 	
-	alias	
-	
 	# paranoid security: prevent any data leak
 	test -f $data_archive && rm -v $data_archive
 	# dump logs to the sdcard
@@ -258,7 +255,6 @@ letsgo() {
 	if test $debug_mode = 1; then
 		# copy some logs in it to help debugging
 		mkdir $sdcard/Voodoo/logs 2>/dev/null
-
 		
 		cat /voodoo.log >> $sdcard/Voodoo/logs/voodoo.txt
 		echo >> $sdcard/Voodoo/logs/voodoo.txt
@@ -313,8 +309,8 @@ mount -t rfs -o rw,check=no /dev/block/stl9 /system
 
 # make a temporary tmp directory ;)
 mkdir /tmp
-mkdir /tmp/sdcard
-mkdir /tmp/sdcard_ext
+mkdir /voodoo/tmp/sdcard
+mkdir /voodoo/tmp/sdcard_ext
 
 # detect the model using the system build.prop
 if ! detect_supported_model_and_setup_device_names; then
@@ -322,14 +318,6 @@ if ! detect_supported_model_and_setup_device_names; then
 	log "model not detected"
 	exec /init_samsung
 fi
-
-# device specific aliases
-#alias mount_data_ext4="mount -t ext4 -o noatime,nodiratime $data_partition /data"
-#alias mount_data_rfs="mount -t rfs -o nosuid,nodev,check=no $data_partition /data"
-
-#alias mount_sdcard="mount -t vfat -o utf8 $sdcard_partition $sdcard"
-#alias mount_sdcard_ext="mount -t vfat -o utf8 $sdcard_ext_partition $sdcard_ext"
-
 
 # use Voodoo etc during the script
 ln -s voodoo/root/etc /etc
@@ -397,7 +385,8 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		if ! check_free; then
 			log "not enough space to migrate from ext4 to rfs"
 			say "cancel-no-space"
-			mount_data_ext4
+			mount_ data_ext4
+			echo "yes" > /voodoo/tmp/ext4_mounted
 			letsgo
 		fi
 		
@@ -492,6 +481,8 @@ if ! detect_valid_ext4_filesystem ; then
 	tune2fs -c 100 -i 100d -m 0 $data_partition
 		
 	mount_ data_ext4
+	echo "yes" > /voodoo/tmp/ext4_mounted
+
 	mount_ sdcard
 
 	# restore the data archived
@@ -510,7 +501,8 @@ else
 	# seems that we have a ext4 partition ;) just mount it
 	log "valid ext4 detected, mounting ext4 /data !"
 	e2fsck -p $data_partition
-	mount_data_ext4
+	mount_ data_ext4
+	echo "yes" > /voodoo/tmp/ext4_mounted
 
 fi
 
