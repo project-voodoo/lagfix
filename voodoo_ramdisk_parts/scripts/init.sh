@@ -1,15 +1,16 @@
 #!/bin/sh
 ###############################################################################
 #                                                                             #
-#    Voodoo lagfix for Samung mobile                                          #
+#    Voodoo lagfix for Samung Galaxy S                                        #
 #                                                                             #
 #    http://project-voodoo.org/                                               #
 #                                                                             #
 #    Devices supported and tested :                                           #
 #      o Galaxy S international - GT-I9000 8GB and 16GB                       #
 #      o Bell Vibrant GT-I9000B                                               #
-#      o T-Mobile Vibrant 16GB                                                #
+#      o T-Mobile Vibrant                                                     #
 #      o AT&T Captivate                                                       #
+#      o Verizon Fascinate                                                    #
 #                                                                             #
 #    Copyright Francois Simond 2010 (supercurio @ xda-developers)             #
 #       credits to gilsken for ideas and support                              #
@@ -31,6 +32,8 @@
 #                                                                             #
 ###############################################################################
 set -x
+exec >> /voodoo_init.log 2>&1
+
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
 export LD_LIBRARY_PATH=/voodoo/root/libs:/voodoo/root/usr/libs:/system/lib:/lib
 
@@ -77,11 +80,11 @@ load_stage() {
 	if ! test -f /voodoo/tmp/stage$1_loaded; then
 		case $1 in
 			2)
-				stagefile="/voodoo/stage2.cpio.xz"
+				stagefile="/voodoo/stage2.cpio.lzma"
 				if test -f $stagefile; then
 					# this stage is in ramdisk. no security check
 					log "load stage2"
-					xzcat $stagefile | cpio -div
+					lzcat $stagefile | cpio -div
 				else
 					log "no stage2 to load"
 				fi
@@ -90,12 +93,12 @@ load_stage() {
 				# give the option to load without signature
 				# from the ramdisk itself
 				# useful for testing and when size don't matter
-				if test -f /voodoo/stage$1.cpio.xz; then
+				if test -f /voodoo/stage$1.cpio.lzma; then
 					log "load stage $1 from ramdisk"
-					xzcat /voodoo/stage$1.cpio.xz | cpio -div
+					lzcat /voodoo/stage$1.cpio.lzma | cpio -div
 				else
 
-					stagefile="$sdcard/Voodoo/resources/stage$1.cpio.xz"
+					stagefile="$sdcard/Voodoo/resources/stage$1.cpio.lzma"
 
 					# load the designated stage after verifying it's
 					# signature to prevent security exploit from sdcard
@@ -104,7 +107,7 @@ load_stage() {
 						for x in `cat /voodoo/signatures/$1`; do
 							if test "$x" = "$signature"  ; then
 								log "load stage $1 from SD"
-								xzcat $stagefile | cpio -div
+								lzcat $stagefile | cpio -div
 								break
 							fi
 						done
