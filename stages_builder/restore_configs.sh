@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-cd buildroot-2010.08/
+cd buildroot-2010.08/ 2>/dev/null
 
 cp -v ../configs/buildroot.config .config
 
