@@ -301,6 +301,9 @@ letsgo() {
 		# clean debugs logs too
 		rm -r $sdcard/Voodoo/logs 2>/dev/null
 	fi
+	
+	# remove voices from memory
+	rm -r /voodoo/voices
 
 	umount $sdcard
 	# set the etc to Android standards
