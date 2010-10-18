@@ -34,4 +34,3 @@ mknod /dev/snd/pcmC0D0p c 116 16
 mknod /dev/snd/pcmC1D0c c 116 56
 mknod /dev/snd/pcmC1D0p c 116 48
 mknod /dev/snd/timer c 116 33
-

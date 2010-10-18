@@ -34,7 +34,7 @@
 set -x
 exec >> /voodoo_init.log 2>&1
 
-PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
+PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin:/system/xbin
 #export LD_LIBRARY_PATH=/voodoo/root/libs:/voodoo/root/usr/libs:/system/lib:/lib
 
 sdcard='/voodoo/tmp/sdcard'
@@ -248,6 +248,28 @@ load_soundsystem() {
 	return $retcode
 }
 
+verify_voodoo_install_in_system() {
+	# if the wrapper is not the same as the one in this ramdisk, we install it
+	if ! cmp /voodoo/system_scripts/fat.format_wrapper.sh /system/fat.format_wrapper.sh; then
+
+		if ! test -L /system/fat.format; then
+
+			# if fat.format is not a symlink, it means that it's
+			# Samsung's binary. Let's rename it
+			mv /system/fat.format /system/fat.format.real
+			log "fat.format renamed to fat.format.real"
+		fi
+		
+		cat /voodoo/system_scripts/fat.format_wrapper.sh > /system/fat.format_wrapper.sh
+		chmod 755 /system/fat.format_wrapper.sh
+
+		ln -s fat.format_wrapper.sh /system/fat.format
+		log "fat.format wrapper installed"
+	else
+		log "fat.format wrapper already installed"
+	fi
+}
+
 letsgo() {
 	
 	# paranoid security: prevent any data leak
@@ -314,6 +336,8 @@ insmod /lib/modules/rfs_fat.ko
 # using what /system partition has to offer
 mount -t rfs -o rw,check=no /dev/block/stl9 /system
 
+verify_voodoo_install_in_system
+
 # make a temporary tmp directory ;)
 mkdir /tmp
 mkdir /voodoo/tmp/sdcard
@@ -360,6 +384,7 @@ umount /cache
 
 # debug mode detection
 if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" ; then
+	log "debug mode enabled"
 	echo "ro.secure=0" >> default.prop
 	echo "ro.debuggable=0" >> default.prop
 	echo "persist.service.adb.enable=1" >> default.prop
@@ -397,14 +422,14 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		umount /data
 
 		# wipe Ext4 filesystem
-		log "wipe Ext4 filesystem before formatin $data_partition as RFS"
+		log "wipe Ext4 filesystem before formatins $data_partition as RFS"
 		wipe_data_filesystem
 
-		# use newfs_msdos instead of fat.format which wouldn't work
-		# here for some obscure reason
-		#fat.format.real -v -F 32 -S 4096 -s 4  $data_partition
-		# FIXME : find options to replicate fat.format behavior
-		newfs_msdos $data_partition
+		# format as RFS
+		# for some obsure reason, fat.format really won't want to
+		# work in this pre-init. That's why we use an alternative technique
+		lzcat /voodoo/configs/rfs_filesystem_data_$model.lzma > $data_partition
+		fsck_msdos -y $data_partition
 
 		# restore the data archived
 		log "restore backup on rfs /data"

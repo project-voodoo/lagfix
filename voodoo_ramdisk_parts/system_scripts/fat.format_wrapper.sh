@@ -8,6 +8,7 @@
 exec >> /voodoo/tmp/fat.format_wrapper_log 2>&1
 export PATH=/system/bin:/voodoo/root/bin
 
+
 # back 2 levels
 parent_pid=`cut -d" " -f4 /proc/self/stat`
 parent_pid=`cut -d" " -f4 /proc/$parent_pid/stat`
