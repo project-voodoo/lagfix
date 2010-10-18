@@ -5,7 +5,7 @@
 # partition is $7 when called by init_samsung
 
 # activate debugging logging
-exec >> /voodoo/logs/fat.format_wrapper_log 2>&1
+exec >> /voodoo/logs/fat.format_wrapper.log 2>&1
 export PATH=/system/bin:/voodoo/root/bin
 
 
