@@ -285,7 +285,7 @@ letsgo() {
 		mkdir $sdcard/Voodoo/logs 2>/dev/null
 		
 		cat /voodoo/logs/voodoo.log >> $sdcard/Voodoo/logs/voodoo_last_boot.txt
-		echo >> $sdcard/Voodoo/logs/voodoo.txt
+		echo >> $sdcard/Voodoo/logs/voodoo_last_boot.txt
 		
 		init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
 		cat /voodoo/logs/init.log > $sdcard/Voodoo/logs/$init_log_filename
