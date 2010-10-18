@@ -35,7 +35,7 @@ set -x
 exec >> /voodoo_init.log 2>&1
 
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
-export LD_LIBRARY_PATH=/voodoo/root/libs:/voodoo/root/usr/libs:/system/lib:/lib
+#export LD_LIBRARY_PATH=/voodoo/root/libs:/voodoo/root/usr/libs:/system/lib:/lib
 
 sdcard='/voodoo/tmp/sdcard'
 sdcard_ext='/voodoo/tmp/sdcard_ext'
@@ -170,9 +170,8 @@ check_free() {
 
 detect_valid_ext4_filesystem() {
 	log "ext4 filesystem detection"
-	if test "`echo $(blkid $data_partition) | cut -d' ' -f3 \
-		| cut -d'"' -f2`" = "ext4"; then
-		# blkid find an ext4 partition. but is it real ?
+	if tune2fs -l $data_partition; then
+		# we found an ext2/3/4 partition. but is it real ?
 		# if the data partition mounts as rfs, it means
 		# that this ext4 partition is just lost bits still here
 		if mount_ data_rfs; then
