@@ -382,7 +382,7 @@ umount /cache
 
 
 # debug mode detection
-if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" ; then
+if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test debug_mode=1 ; then
 	log "debug mode enabled"
 	echo "ro.secure=0" >> default.prop
 	echo "ro.debuggable=0" >> default.prop
