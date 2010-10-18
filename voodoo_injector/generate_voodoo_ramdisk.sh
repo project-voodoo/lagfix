@@ -23,6 +23,7 @@ stages_source=$4
 
 my_pwd=`pwd`
 
+
 # create the destination directory
 mkdir $dest 2>/dev/null
 
@@ -36,18 +37,22 @@ if ! test -f stage2* || ! test -f stage3-sound*; then
 fi
 cd - > /dev/null
 
+
 # copy the ramdisk source to the voodoo ramdisk directory
 cp -ax $source $dest/uncompressed
 cd $dest/uncompressed
 
 mv init init_samsung
 
+
 # copy ramdisk stuff
 mkdir voodoo 2>/dev/null
 cp -ax $my_pwd/$voodoo_ramdisk_parts/* voodoo/
 
+
 # make sure su binary (Superuser.apk) is fully suid
 chmod 06755 voodoo/root/bin/su
+
 
 # empty directories, probably not in gits
 mkdir dev 2>/dev/null
@@ -60,6 +65,7 @@ mkdir dev/snd
 mkdir voodoo/tmp
 mkdir voodoo/root/usr
 
+
 # symlink to voodoo stuff
 ln -s voodoo/root/bin .
 ln -s voodoo/root/usr .
@@ -70,6 +76,7 @@ ln -s ../bin/busybox bin/insmod
 # create the main init symlink
 ln -s voodoo/scripts/init.sh init
 #ln -s init_samsung init
+
 
 # extract stage1 busybox
 pwd
@@ -98,6 +105,8 @@ for x in ../../../lagfix/stages_builder/stages/*.lzma; do
 done
 cd ..
 
+
+# do the smallest one. this one is wickely compressed!
 cp -a uncompressed compressed-smallest
 cd compressed-smallest
 rm voodoo/run/*
@@ -111,7 +120,6 @@ lzcat $archive | cpio -di
 rm $archive
 exec /voodoo/scripts/init.sh' > init
 chmod 755 init
-
 mv voodoo/root/bin .
 rm -r voodoo/voices
 stage0_list="lib/ sbin/ voodoo/ res/ *.rc init_samsung modules default.prop"
