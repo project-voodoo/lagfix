@@ -422,7 +422,7 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		umount /data
 
 		# wipe Ext4 filesystem
-		log "wipe Ext4 filesystem before formatins $data_partition as RFS"
+		log "wipe Ext4 filesystem before formating $data_partition as RFS"
 		wipe_data_filesystem
 
 		# format as RFS
