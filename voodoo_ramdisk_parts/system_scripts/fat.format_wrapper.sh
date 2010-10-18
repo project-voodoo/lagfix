@@ -5,7 +5,6 @@
 # partition is $7 when called by init_samsung
 
 # activate debugging logging
-set -x
 exec >> /voodoo/tmp/fat.format_wrapper_log 2>&1
 export PATH=/system/bin:/voodoo/root/bin
 
@@ -16,7 +15,7 @@ parent_name=`cat /proc/$parent_pid/cmdline`
 
 case $parent_name in
 	/init_samsung)
-		if ls /voodoo/tmp/voodoo_data_mounted; then
+		if ls /voodoo/run/voodoo_data_mounted; then
 			echo "Ext4 activated and run by init_samsung. nothing done"
 			exit 0
 		fi
@@ -24,5 +23,3 @@ case $parent_name in
 esac
 
 fat.format.real $*
-
-

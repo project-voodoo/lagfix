@@ -77,7 +77,7 @@ mount_() {
 
 load_stage() {
 	# don't reload a stage already in memory
-	if ! test -f /voodoo/tmp/stage$1_loaded; then
+	if ! test -f /voodoo/run/stage$1_loaded; then
 		case $1 in
 			2)
 				stagefile="/voodoo/stage2.cpio.lzma"
@@ -121,7 +121,7 @@ load_stage() {
 
 			;;
 		esac
-		> /voodoo/tmp/stage$1_loaded
+		> /voodoo/run/stage$1_loaded
 	fi
 	return $retcode
 }
@@ -390,7 +390,7 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 			log "not enough space to migrate from ext4 to rfs"
 			say "cancel-no-space"
 			mount_ data_ext4
-			echo "yes" > /voodoo/tmp/voodoo_data_mounted
+			> /voodoo/run/voodoo_data_mounted
 			letsgo
 		fi
 		
@@ -480,7 +480,7 @@ if ! detect_valid_ext4_filesystem ; then
 	# force check the filesystem after 100 mounts or 100 days
 	tune2fs -c 100 -i 100d -m 0 $data_partition
 	mount_ data_ext4
-	echo "yes" > /voodoo/tmp/voodoo_data_mounted
+	> /voodoo/run/voodoo_data_mounted
 
 	# restore the data archived
 	say "step2"
@@ -496,7 +496,7 @@ else
 	log "valid ext4 detected, mounting ext4 /data !"
 	e2fsck -p $data_partition
 	mount_ data_ext4
-	echo "yes" > /voodoo/tmp/voodoo_data_mounted
+	> /voodoo/run/voodoo_data_mounted
 
 fi
 

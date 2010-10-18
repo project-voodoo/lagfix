@@ -94,14 +94,15 @@ cp -a uncompressed compressed
 cd uncompressed
 for x in ../../../lagfix/stages_builder/stages/*.lzma; do
 	lzcat "$x" | cpio -di
+	> voodoo/run/`basename "$x" .cpio.lzma`_loaded
 done
 cd ..
 
 cp -a uncompressed compressed-smallest
 cd compressed-smallest
+rm voodoo/run/*
 rm bin
 rm init
-
 echo '#!/bin/sh
 export PATH=/bin
 
