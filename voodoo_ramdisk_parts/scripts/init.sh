@@ -32,10 +32,9 @@
 #                                                                             #
 ###############################################################################
 set -x
-exec >> /voodoo_init.log 2>&1
+exec >> /voodoo/logs/init.log 2>&1
 
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin:/system/xbin
-#export LD_LIBRARY_PATH=/voodoo/root/libs:/voodoo/root/usr/libs:/system/lib:/lib
 
 sdcard='/voodoo/tmp/sdcard'
 sdcard_ext='/voodoo/tmp/sdcard_ext'
@@ -209,8 +208,8 @@ restore_backup() {
 
 log() {
 	log="Voodoo: $1"
-	echo -e "\n  ###  $log\n" >> /voodoo_init.log
-	echo `date '+%Y-%m-%d %H:%M:%S'` $log >> /voodoo.log
+	echo -e "\n  ###  $log\n" >> /voodoo/logs/init.log
+	echo `date '+%Y-%m-%d %H:%M:%S'` $log >> /voodoo/logs/voodoo.log
 }
 
 say() {
@@ -285,16 +284,16 @@ letsgo() {
 		# copy some logs in it to help debugging
 		mkdir $sdcard/Voodoo/logs 2>/dev/null
 		
-		cat /voodoo.log >> $sdcard/Voodoo/logs/voodoo.txt
+		cat /voodoo/logs/voodoo.log >> $sdcard/Voodoo/logs/voodoo_last_boot.txt
 		echo >> $sdcard/Voodoo/logs/voodoo.txt
 		
 		init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
-		cat /voodoo_init.log > $sdcard/Voodoo/logs/$init_log_filename
+		cat /voodoo/logs/init.log > $sdcard/Voodoo/logs/$init_log_filename
 
 		# copy logs also on external SD if available
 		if mount_ sdcard_ext; then
 			mkdir $sdcard_ext/Voodoo-logs 2>/dev/null
-			cat /voodoo_init.log > $sdcard_ext/Voodoo-logs/$init_log_filename
+			cat /voodoo/logs/init.log > $sdcard_ext/Voodoo-logs/$init_log_filename
 			umount $sdcard_ext
 		fi
 
