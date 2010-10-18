@@ -83,14 +83,17 @@ ln -s voodoo/scripts/init.sh init
 
 
 # extract stage1 busybox
-pwd
 cpio -di < ../../../lagfix/stages_builder/stages/stage1.cpio
 
+
+# clean git stuff
 find -name '.git*' -exec rm {} \;
 
+
+# generate signatures for the stage
+# because you want to be able to load them from the sdcard
 for x in ../../../lagfix/stages_builder/stages/*.lzma; do
-	# generate signatures at the same time
-	sha1sum "$x" | cut -d' ' -f1 > voodoo/signatures/`basename "$x" .cpio.lzma`	
+	sha1sum "$x" | cut -d' ' -f1 >> voodoo/signatures/`basename "$x" .cpio.lzma`	
 done
 
 
