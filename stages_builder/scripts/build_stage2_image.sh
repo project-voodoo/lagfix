@@ -14,6 +14,7 @@ find \
         usr/sbin/e2fsck \
         usr/sbin/blkid \
         usr/sbin/tune2fs \
+        usr/sbin/e2label \
         usr/lib/libext2fs.* \
         usr/lib/libblkid.* \
         usr/lib/libuuid.* \

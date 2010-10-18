@@ -330,9 +330,6 @@ fi
 # mounting also the internal sdcard
 mount_ sdcard
 
-# use Voodoo etc during the script
-ln -s voodoo/root/etc /etc
-
 # we will need these directories
 mkdir /cache 2> /dev/null
 mkdir /dbdata 2> /dev/null 
