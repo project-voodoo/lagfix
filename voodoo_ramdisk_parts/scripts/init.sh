@@ -45,8 +45,8 @@ dbdata_partition="/dev/block/stl10"
 alias check_dbdata="fsck_msdos -y $dbdata_partition"
 alias make_backup="find /data /dbdata | cpio -H newc -o > $data_archive"
 
-
-debug_mode=1
+# enable this for development
+#debug_mode=1
 
 mount_() {
 	case $1 in
@@ -298,10 +298,6 @@ letsgo() {
 		fi
 
 	else
-		# we are not in debug mode, let's wipe stuff to free some MB of memory !
-		rm -r /voodoo
-		# clean now broken symlinks
-		rm /bin /usr
 		# clean debugs logs too
 		rm -r $sdcard/Voodoo/logs 2>/dev/null
 	fi
@@ -382,11 +378,19 @@ umount /cache
 
 
 # debug mode detection
-if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test debug_mode=1 ; then
+if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test $debug_mode = 1 ; then
 	log "debug mode enabled"
+
+	# force enabling very powerful debug tools (and yes, root from adb !)
+	mv default.prop default.prop-stock
+	echo "Voodoo lagfix: debug mode enabled" > default.prop
 	echo "ro.secure=0" >> default.prop
-	echo "ro.debuggable=0" >> default.prop
+	echo "ro.allow.mock.location=0" >> default.prop
+	echo "ro.debuggable=1" >> default.prop
 	echo "persist.service.adb.enable=1" >> default.prop
+	cat  default.prop-stock >> default.prop
+	rm default.prop-stock
+
 	debug_mode=1
 fi
 
