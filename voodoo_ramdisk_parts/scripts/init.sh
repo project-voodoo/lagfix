@@ -38,12 +38,12 @@ PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin:/system/xbin
 
 sdcard='/voodoo/tmp/sdcard'
 sdcard_ext='/voodoo/tmp/sdcard_ext'
-data_archive="$sdcard/voodoo_user-data.cpio"
+data_archive="$sdcard/voodoo_user-data.tar"
 
 dbdata_partition="/dev/block/stl10"
 
 alias check_dbdata="fsck_msdos -y $dbdata_partition"
-alias make_backup="find /data /dbdata | cpio -H newc -o > $data_archive"
+alias make_backup="tar cvf $data_archive /data /dbdata"
 
 # enable this for development
 #debug_mode=1
@@ -202,7 +202,7 @@ restore_backup() {
 	# extract from the backup,
 	# with dirty workaround to fix battery level inaccuracy
 	# then remove the backup file if everything went smooth
-	cpio -div < $data_archive && rm $data_archive
+	tar xvf $data_archive && rm $data_archive
 	rm /data/system/batterystats.bin
 }
 
