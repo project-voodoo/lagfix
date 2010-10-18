@@ -74,7 +74,7 @@ ln -s ../bin/busybox bin/insmod
 
 
 # symlink the su too
-ln -s voodoo/root/sbin/su sbin/su
+ln -s /voodoo/root/sbin/su sbin/su
 
 
 # create the main init symlink

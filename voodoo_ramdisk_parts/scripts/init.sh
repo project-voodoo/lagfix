@@ -258,7 +258,7 @@ verify_voodoo_install_in_system() {
 			mv /system/bin/fat.format /system/bin/fat.format.real
 			log "fat.format renamed to fat.format.real"
 		fi
-		
+
 		cat /voodoo/system_scripts/fat.format_wrapper.sh > /system/bin/fat.format_wrapper.sh
 		chmod 755 /system/bin/fat.format_wrapper.sh
 
@@ -283,10 +283,10 @@ letsgo() {
 	if test $debug_mode = 1; then
 		# copy some logs in it to help debugging
 		mkdir $sdcard/Voodoo/logs 2>/dev/null
-		
+
 		cat /voodoo/logs/voodoo.log >> $sdcard/Voodoo/logs/voodoo_last_boot.txt
 		echo >> $sdcard/Voodoo/logs/voodoo_last_boot.txt
-		
+
 		init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
 		cat /voodoo/logs/init.log > $sdcard/Voodoo/logs/$init_log_filename
 
@@ -306,9 +306,9 @@ letsgo() {
 	# set the etc to Android standards
 	rm /etc
 	# on Froyo ramdisk, there is no etc to /etc/system symlink anymore
-	
+
 	umount /system
-	
+
 	# run Samsung's init and disappear
 	exec /init_samsung
 }
