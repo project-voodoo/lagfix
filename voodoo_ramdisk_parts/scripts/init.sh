@@ -56,14 +56,11 @@ mount_() {
 		dbdata)
 			mount -t rfs -o nosuid,nodev,check=no $dbdata_partition /dbdata
 		;;
-		cache)
-			mount -t rfs -o nosuid,nodev,check=no /dev/block/stl11 /cache
-		;;
-		data_ext4)
-			mount -t ext4 -o noatime,nodiratime,barrier=0,noauto_da_alloc $data_partition /data
-		;;
 		data_rfs)
 			mount -t rfs -o nosuid,nodev,check=no $data_partition /data
+		;;
+		data_ext4)
+			mount -t ext4 -o noatime,barrier=0,noauto_da_alloc $data_partition /data
 		;;
 		sdcard)
 			mount -t vfat -o utf8 $sdcard_partition $sdcard
