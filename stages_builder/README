@@ -1,0 +1,12 @@
+How to build Voodoo lagfix stages:
+
+./scripts/download_and_extract_buildroot.sh
+
+./scripts/restore_configs.sh
+(quit the make menuconfig without changes)
+
+./scripts/build_everything.sh
+Have fun outside or if you have kids play with them
+(or just wait)
+
+And now your stages are fine :)
