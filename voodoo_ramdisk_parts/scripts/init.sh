@@ -278,8 +278,24 @@ letsgo() {
 	test -f $sdcard/Voodoo && rm $sdcard/Voodoo
 	mkdir $sdcard/Voodoo 2>/dev/null
 
+	verify_voodoo_install_in_system
+	
+	# run additionnal extensions scripts
+	# actually they are sourced so they can use the init functions,
+	# resources and variables
+	
+	for x in /voodoo/scripts/extensions/*; do
+		log "executing extension: $x"
+		. "$x"
+	done
+
 	log "running init !"
 
+	# debug_mode = 1 forced here to enable the log saving part during
+	# the froyo experimental tests
+	# because it's set here, it only affect the logs and don't change
+	# other parameters
+	debug_mode=1
 	if test $debug_mode = 1; then
 		# copy some logs in it to help debugging
 		mkdir $sdcard/Voodoo/logs 2>/dev/null
@@ -333,8 +349,6 @@ insmod /lib/modules/rfs_fat.ko
 
 # using what /system partition has to offer
 mount -t rfs -o rw,check=no /dev/block/stl9 /system
-
-verify_voodoo_install_in_system
 
 # make a temporary tmp directory ;)
 mkdir /tmp
@@ -515,7 +529,7 @@ if ! detect_valid_ext4_filesystem ; then
 
 	# clean all these mounts
 	umount /dbdata
-	say "success"&
+	say "success"
 
 else
 
