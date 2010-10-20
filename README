@@ -1,1 +1,6 @@
 This is Voodoo lagfix tools
+
+How to build it:
+
+1/ stages_builder
+2/ use voodoo_injector's generate_voodoo_ramdisk.sh
