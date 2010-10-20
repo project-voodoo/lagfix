@@ -69,12 +69,14 @@ mkdir voodoo/root/usr
 # symlink to voodoo stuff
 ln -s voodoo/root/bin .
 ln -s voodoo/root/usr .
+# etc symlink will be used only during extraction of stages
+# after that it needs to be removed
 ln -s voodoo/root/etc .
 ln -s ../bin/busybox bin/insmod
 
 
 # create the main init symlink
-ln -s voodoo/scripts/init.sh init
+ln -s voodoo/scripts/init_logger.sh init
 #ln -s init_samsung init
 
 
@@ -106,6 +108,11 @@ for x in ../../../lagfix/stages_builder/stages/*.lzma; do
 	lzcat "$x" | cpio -di
 	> voodoo/run/`basename "$x" .cpio.lzma`_loaded
 done
+
+# remove the etc symlink wich will causes problems when we boot
+# directly on samsung_init
+rm etc
+
 cd ..
 
 
@@ -134,7 +141,11 @@ cd ..
 
 # do the compressed one
 cp -a ../../lagfix/stages_builder/stages/*.lzma compressed/voodoo/
-rm -r compressed/voodoo/voices
+cd compressed
+rm -r voodoo/voices
+# important: remove the etc symlink
+rm etc
+cd ..
 
 cp -a compressed compressed-stage2-only
 rm compressed-stage2-only/voodoo/stage3*

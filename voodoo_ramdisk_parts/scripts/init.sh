@@ -32,7 +32,6 @@
 #                                                                             #
 ###############################################################################
 set -x
-exec >> /voodoo/logs/init.log 2>&1
 
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin:/system/xbin
 
@@ -46,7 +45,7 @@ alias check_dbdata="fsck_msdos -y $dbdata_partition"
 alias make_backup="tar cvf $data_archive /data /dbdata"
 
 # enable this for development
-#debug_mode=1
+debug_mode=1
 
 mount_() {
 	case $1 in
@@ -372,6 +371,9 @@ mkdir /cache 2> /dev/null
 mkdir /dbdata 2> /dev/null 
 mkdir /data 2> /dev/null 
 
+# create the voodoo etc symlink, required for e2fsprogs, alsa..
+ln -s /voodoo/root/etc etc
+
 # copy the sound configuration
 cat /system/etc/asound.conf > /etc/asound.conf
 
@@ -397,7 +399,7 @@ umount /cache
 
 
 # debug mode detection
-if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test $debug_mode = 1 ; then
+if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test "$debug_mode" = 1 ; then
 	log "debug mode enabled"
 
 	# force enabling very powerful debug tools (and yes, root from adb !)
