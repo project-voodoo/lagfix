@@ -73,10 +73,6 @@ ln -s voodoo/root/etc .
 ln -s ../bin/busybox bin/insmod
 
 
-# symlink the su too
-ln -s /voodoo/root/sbin/su sbin/su
-
-
 # create the main init symlink
 ln -s voodoo/scripts/init.sh init
 #ln -s init_samsung init
