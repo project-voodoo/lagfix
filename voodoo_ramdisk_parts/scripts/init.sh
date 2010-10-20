@@ -360,7 +360,8 @@ mkdir /voodoo/tmp/sdcard_ext
 if ! detect_supported_model_and_setup_device_names; then
 	# the hardware model is unknown
 	log "model not detected"
-	exec /init_samsung
+	# try to attempt a boot through the standard procedure
+	letsgo
 fi
 
 # mounting also the internal sdcard
