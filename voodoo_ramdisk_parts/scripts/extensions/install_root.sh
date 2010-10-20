@@ -6,9 +6,9 @@ su_dest="/system/xbin/su"
 
 extension_install_su() {
 	cat /voodoo/root/sbin/su > $su_dest
+	# make sure it's owned by root
 	chown root.shell $su_dest
 	chmod 06755 $su_dest
-	# make sure it's owned by root
 	log "secure su binary installed"
 }
 
