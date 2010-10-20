@@ -344,6 +344,10 @@ insmod /lib/modules/fsr_stl.ko
 insmod /lib/modules/rfs_glue.ko
 insmod /lib/modules/rfs_fat.ko
 
+# insmod ext4 modules for injected ramdisks
+test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
+test -f /lib/modules/jbd2.ko && insmod /lib/modules/jbd2.ko
+
 # using what /system partition has to offer
 mount -t rfs -o rw,check=no /dev/block/stl9 /system
 
