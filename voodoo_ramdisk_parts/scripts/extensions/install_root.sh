@@ -2,7 +2,6 @@
 
 su_dest="/system/xbin/su"
 
-# test if the su binary already exist in xbin
 
 extension_install_su() {
 	cat /voodoo/root/sbin/su > $su_dest
@@ -13,6 +12,7 @@ extension_install_su() {
 	log "secure su binary installed"
 }
 
+# test if the su binary already exist in xbin
 if test -u $su_dest ; then
 
 	# okay, the su binary exist and is already suid
@@ -28,5 +28,3 @@ else
 	# not here or not setup properly, let's install su
 	extension_install_su
 fi
-	
-
