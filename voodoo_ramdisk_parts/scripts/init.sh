@@ -45,7 +45,7 @@ alias check_dbdata="fsck_msdos -y $dbdata_partition"
 alias make_backup="tar cvf $data_archive /data /dbdata"
 
 # enable this for development
-debug_mode=1
+#debug_mode=1
 
 mount_() {
 	case $1 in
@@ -75,11 +75,11 @@ load_stage() {
 	if ! test -f /voodoo/run/stage$1_loaded; then
 		case $1 in
 			2)
-				stagefile="/voodoo/stage2.cpio.lzma"
+				stagefile="/voodoo/stage2.tar.lzma"
 				if test -f $stagefile; then
 					# this stage is in ramdisk. no security check
 					log "load stage2"
-					lzcat $stagefile | cpio -div
+					lzcat $stagefile | tar xvf
 				else
 					log "no stage2 to load"
 				fi
@@ -88,12 +88,12 @@ load_stage() {
 				# give the option to load without signature
 				# from the ramdisk itself
 				# useful for testing and when size don't matter
-				if test -f /voodoo/stage$1.cpio.lzma; then
+				if test -f /voodoo/stage$1.tar.lzma; then
 					log "load stage $1 from ramdisk"
-					lzcat /voodoo/stage$1.cpio.lzma | cpio -div
+					lzcat /voodoo/stage$1.tar.lzma | tar xvf
 				else
 
-					stagefile="$sdcard/Voodoo/resources/stage$1.cpio.lzma"
+					stagefile="$sdcard/Voodoo/resources/stage$1.tar.lzma"
 
 					# load the designated stage after verifying it's
 					# signature to prevent security exploit from sdcard
@@ -102,7 +102,7 @@ load_stage() {
 						for x in `cat /voodoo/signatures/$1`; do
 							if test "$x" = "$signature"  ; then
 								log "load stage $1 from SD"
-								lzcat $stagefile | cpio -div
+								lzcat $stagefile | tar -div
 								break
 							fi
 						done
@@ -226,9 +226,11 @@ load_soundsystem() {
 	if ! test -d /voodoo/voices; then
 		if test -d $sdcard/Voodoo/resources/voices/; then
 			if test "`du -s $sdcard/Voodoo/resources/voices/ | cut -d \/ -f1`" -le 1024; then
-				# copy the voices, using cpio as a "cp" replacement (shrink)
-				cd $sdcard/Voodoo/resources
-				find voices/ | cpio -p /voodoo
+				# copy the voices (no cp command, use cat)
+				cd $sdcard/Voodoo/resources/voices
+				for x in *.mp3; do
+					cat $x > /voodoo/voices/$x
+				done
 				cd /
 				log "voices loaded"
 			else
@@ -402,9 +404,10 @@ umount /cache
 if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test "$debug_mode" = 1 ; then
 	log "debug mode enabled"
 
+	# TODO : rewrite the same thing cleaner using ed
 	# force enabling very powerful debug tools (and yes, root from adb !)
 	mv default.prop default.prop-stock
-	echo "Voodoo lagfix: debug mode enabled" > default.prop
+	echo "# Voodoo lagfix: debug mode enabled" >> default.prop
 	echo "ro.secure=0" >> default.prop
 	echo "ro.allow.mock.location=0" >> default.prop
 	echo "ro.debuggable=1" >> default.prop
@@ -414,6 +417,7 @@ if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test "$debug_mo
 
 	debug_mode=1
 fi
+
 
 
 if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then

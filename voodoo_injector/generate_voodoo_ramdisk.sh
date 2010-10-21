@@ -81,7 +81,7 @@ ln -s voodoo/scripts/init_logger.sh init
 
 
 # extract stage1 busybox
-cpio -di < ../../../lagfix/stages_builder/stages/stage1.cpio
+tar xf ../../../lagfix/stages_builder/stages/stage1.tar
 
 
 # clean git stuff
@@ -91,7 +91,7 @@ find -name '.git*' -exec rm {} \;
 # generate signatures for the stage
 # because you want to be able to load them from the sdcard
 for x in ../../../lagfix/stages_builder/stages/*.lzma; do
-	sha1sum "$x" | cut -d' ' -f1 >> voodoo/signatures/`basename "$x" .cpio.lzma`	
+	sha1sum "$x" | cut -d' ' -f1 >> voodoo/signatures/`basename "$x" .tar.lzma`	
 done
 
 
@@ -105,8 +105,8 @@ cp -a uncompressed compressed
 # extract stages directly
 cd uncompressed
 for x in ../../../lagfix/stages_builder/stages/*.lzma; do
-	lzcat "$x" | cpio -di
-	> voodoo/run/`basename "$x" .cpio.lzma`_loaded
+	lzcat "$x" | tar x
+	> voodoo/run/`basename "$x" .tar.lzma`_loaded
 done
 
 # remove the etc symlink wich will causes problems when we boot
@@ -125,15 +125,15 @@ rm init
 echo '#!/bin/sh
 export PATH=/bin
 
-archive=compressed_voodoo_ramdisk.cpio.lzma
-lzcat $archive | cpio -di
+archive=compressed_voodoo_ramdisk.tar.lzma
+lzcat $archive | tar x
 rm $archive
 exec /voodoo/scripts/init.sh' > init
 chmod 755 init
 mv voodoo/root/bin .
 rm -r voodoo/voices
 stage0_list="lib/ sbin/ voodoo/ res/ *.rc init_samsung modules default.prop"
-find $stage0_list | cpio -H newc -o | lzma -9 > compressed_voodoo_ramdisk.cpio.lzma
+find $stage0_list | tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
 rm -r $stage0_list
 cd ..
 

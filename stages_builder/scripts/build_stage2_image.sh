@@ -1,7 +1,7 @@
 #!/bin/sh
 
 my_pwd=`pwd`
-DEST=$my_pwd"/stages/stage2.cpio.lzma"
+DEST=$my_pwd"/stages/stage2.tar.lzma"
 
 cd target
 
@@ -20,6 +20,6 @@ find \
         usr/lib/libss.so* \
         usr/lib/libe2p.* \
         usr/lib/libcom_err.* \
-        | cpio -v -H newc -o | lzma -9  > $DEST
+        | xargs tar cv | lzma -9  > $DEST
 
 ls -lh $DEST
