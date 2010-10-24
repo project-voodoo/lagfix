@@ -103,6 +103,7 @@ cp -a uncompressed compressed
 
 # do the uncompressed one
 # extract stages directly
+echo "Build the uncompressed ramdisk"
 cd uncompressed
 for x in ../../../lagfix/stages_builder/stages/*.lzma; do
 	lzcat "$x" | tar x
@@ -117,6 +118,7 @@ cd ..
 
 
 # do the smallest one. this one is wickely compressed!
+echo "Build the compressed-smallest ramdisk"
 cp -a uncompressed compressed-smallest
 cd compressed-smallest
 rm voodoo/run/*
@@ -131,15 +133,16 @@ rm $archive
 exec /voodoo/scripts/init.sh' > init
 chmod 755 init
 mv voodoo/root/bin .
+
 rm -r voodoo/voices
-stage0_list="lib/ sbin/ voodoo/ res/ *.rc init_samsung modules default.prop"
-find $stage0_list | tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
-rm -r $stage0_list
+stage0_list="lib/ sbin/ voodoo/ res/ modules/ *.rc init_samsung default.prop"
+find $stage0_list | xargs tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
+#rm -r $stage0_list
 cd ..
 
 
-
 # do the compressed one
+echo "Build the compressed ramdisk"
 cp -a ../../lagfix/stages_builder/stages/*.lzma compressed/voodoo/
 cd compressed
 rm -r voodoo/voices
@@ -147,6 +150,7 @@ rm -r voodoo/voices
 rm etc
 cd ..
 
+echo "Build the compressed-stage2-only"
 cp -a compressed compressed-stage2-only
 rm compressed-stage2-only/voodoo/stage3*
 
