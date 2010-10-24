@@ -137,7 +137,7 @@ mv voodoo/root/bin .
 rm -r voodoo/voices
 stage0_list="lib/ sbin/ voodoo/ res/ modules/ *.rc init_samsung default.prop"
 find $stage0_list | xargs tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
-#rm -r $stage0_list
+rm -r $stage0_list
 cd ..
 
 
