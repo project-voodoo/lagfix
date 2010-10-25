@@ -10,6 +10,17 @@
 # usage: generate_voodoo_ramdisk.sh stock_ramdisk voodoo_ramdisks voodoo_ramdisk_parts stages_source
 #
 
+
+make_cpio() {
+	echo "creating a cpio for $1"
+	cd $1
+	find | cpio -H newc -o > ../$1.cpio
+	ls -lh ../$1.cpio
+	cd - >/dev/null
+	echo 
+}
+
+
 if ! test -d "$3" || ! test -n "$2" || ! test -d "$1" ; then
 	echo "please specify 3 valid directories names"
 	exit 1
@@ -113,8 +124,9 @@ done
 # remove the etc symlink wich will causes problems when we boot
 # directly on samsung_init
 rm etc
-
 cd ..
+
+make_cpio uncompressed
 
 
 # do the smallest one. this one is wickely compressed!
@@ -127,10 +139,8 @@ rm init
 echo '#!/bin/sh
 export PATH=/bin
 
-archive=compressed_voodoo_ramdisk.tar.lzma
-lzcat $archive | tar x
-rm $archive
-exec /voodoo/scripts/init.sh' > init
+lzcat compressed_voodoo_ramdisk.tar.lzma | tar x
+exec /voodoo/scripts/init_logger.sh' > init
 chmod 755 init
 mv voodoo/root/bin .
 
@@ -139,6 +149,8 @@ stage0_list="lib/ sbin/ voodoo/ res/ modules/ *.rc init_samsung default.prop"
 find $stage0_list | xargs tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
 rm -r $stage0_list
 cd ..
+
+make_cpio compressed-smallest
 
 
 # do the compressed one
@@ -150,10 +162,14 @@ rm -r voodoo/voices
 rm etc
 cd ..
 
+make_cpio compressed
+
+
 echo "Build the compressed-stage2-only"
 cp -a compressed compressed-stage2-only
 rm compressed-stage2-only/voodoo/stage3*
 
+make_cpio compressed-stage2-only
 
 
 echo
