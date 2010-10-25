@@ -99,7 +99,7 @@ load_stage() {
 					# signature to prevent security exploit from sdcard
 					if test -f $stagefile; then
 						signature=`sha1sum $stagefile | cut -d' ' -f 1`
-						for x in `cat /voodoo/signatures/$1`; do
+						for x in `cat /voodoo/signatures/stage$1`; do
 							if test "$x" = "$signature"  ; then
 								log "load stage $1 from SD"
 								lzcat $stagefile | tar -div
