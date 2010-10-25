@@ -65,7 +65,7 @@ mount_() {
 			mount -t vfat -o utf8 $sdcard_partition $sdcard
 		;;
 		sdcard_ext)
-			mount -t vfat -o utf8 $sdcard_ext_partition $sdcard_ext
+			mount -t vfat -o utf8 $sdcard_ext_partition $sdcard_ext 2>/dev/null
 		;;
 	esac
 }
