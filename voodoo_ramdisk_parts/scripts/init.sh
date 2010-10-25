@@ -449,7 +449,7 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		say "step1"&
 		if ! make_backup; then
 			log "error during the backup operation, conversion stops here"
-			log "botting in Ext4 mode"
+			log "booting in Ext4 mode"
 			letsgo
 		fi
 		
@@ -518,7 +518,7 @@ if ! detect_valid_ext4_filesystem ; then
 	log "run the backup operation"
 	if ! make_backup; then
 		log "error during the backup operation, conversion stops here"
-		log "botting in RFS mode"
+		log "booting in RFS mode"
 		letsgo
 	fi
 	
