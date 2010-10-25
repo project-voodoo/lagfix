@@ -159,8 +159,8 @@ check_free() {
 	# more than 100MB on /data, talk to the user
 	test $space_needed -gt 102400 && say "wait"
 
-	# FIXME: get a % of security
-	test $target_free -ge $space_needed
+	# ask for 10% more free space for security reasons
+	test $target_free -ge $(( $space_needed + $space_needed / 10))
 }
 
 detect_valid_ext4_filesystem() {
@@ -447,7 +447,11 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		fi
 		
 		say "step1"&
-		make_backup
+		if ! make_backup; then
+			log "error during the backup operation, conversion stops here"
+			log "botting in Ext4 mode"
+			letsgo
+		fi
 		
 		# umount data because we will wipe it
 		umount /data
@@ -512,7 +516,11 @@ if ! detect_valid_ext4_filesystem ; then
 
 	# run the backup operation
 	log "run the backup operation"
-	make_backup
+	if ! make_backup; then
+		log "error during the backup operation, conversion stops here"
+		log "botting in RFS mode"
+		letsgo
+	fi
 	
 	# umount data because the partition will be wiped
 	umount /data
