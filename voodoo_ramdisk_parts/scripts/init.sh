@@ -268,6 +268,9 @@ verify_voodoo_install_in_system() {
 }
 
 letsgo() {
+
+	# remove the tarball in maximum compression mode
+	rm compressed_voodoo_ramdisk.tar.lzma 2>/dev/null
 	
 	# paranoid security: prevent any data leak
 	test -f $data_archive && rm -v $data_archive
@@ -346,8 +349,8 @@ insmod /lib/modules/rfs_glue.ko
 insmod /lib/modules/rfs_fat.ko
 
 # insmod ext4 modules for injected ramdisks
-test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
 test -f /lib/modules/jbd2.ko && insmod /lib/modules/jbd2.ko
+test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
 
 # using what /system partition has to offer
 mount -t rfs -o rw,check=no /dev/block/stl9 /system
