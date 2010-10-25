@@ -6,7 +6,7 @@
 
 # activate debugging logging
 exec >> /voodoo/logs/fat.format_wrapper.log 2>&1
-export PATH=/system/bin:/voodoo/root/bin
+export PATH=/system/bin:/bin
 
 
 # back 2 levels
