@@ -10,16 +10,11 @@
 # usage: generate_voodoo_ramdisk.sh stock_ramdisk voodoo_ramdisks voodoo_ramdisk_parts stages_source
 #
 
-uid=`id -u`
-gid=`id -g`
-
 make_cpio() {
 	echo "creating a cpio for $1"
 	cd $1 || exit "error during stage cpio file creation"
-	sudo chown root.root . -R
-	find | cpio -H newc -o > ../$1.cpio
+	find | fakeroot cpio -H newc -o > ../$1.cpio
 	ls -lh ../$1.cpio
-	sudo chown $uid.$gid . -R
 	cd - >/dev/null
 	echo 
 }
