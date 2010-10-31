@@ -98,20 +98,18 @@ load_stage() {
 					# load the designated stage after verifying it's
 					# signature to prevent security exploit from sdcard
 					if test -f $stagefile; then
+						retcode=1
 						signature=`sha1sum $stagefile | cut -d' ' -f 1`
 						for x in `cat /voodoo/signatures/stage$1`; do
 							if test "$x" = "$signature"  ; then
+								retcode=0
 								log "load stage $1 from SD"
-								lzcat $stagefile | tar -div
+								lzcat $stagefile | tar xv
 								break
 							fi
 						done
-						log "stage $1 not loaded, signature mismatch"
-						retcode=1
 					fi
-					log "stage $1 not loaded, stage file don't exist"
-					retcode=1
-					
+					test retcode = 1 && log "stage $1 not loaded, stage file don't exist"
 				fi
 
 			;;
@@ -224,6 +222,7 @@ load_soundsystem() {
 	# cache the voices from the SD to the ram
 	# with a size limit to prevent filling memory security expoit
 	if ! test -d /voodoo/voices; then
+		mkdir /voodoo/voices
 		if test -d $sdcard/Voodoo/resources/voices/; then
 			if test "`du -s $sdcard/Voodoo/resources/voices/ | cut -d \/ -f1`" -le 1024; then
 				# copy the voices (no cp command, use cat)
