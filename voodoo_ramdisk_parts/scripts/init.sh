@@ -241,21 +241,21 @@ verify_voodoo_install_in_system() {
 	# if the wrapper is not the same as the one in this ramdisk, we install it
 	if ! cmp /voodoo/system_scripts/fat.format_wrapper.sh /system/bin/fat.format_wrapper.sh; then
 
-		if ! test -L /system/bin/fat.format; then
-
-			# if fat.format is not a symlink, it means that it's
-			# Samsung's binary. Let's rename it
-			mv /system/bin/fat.format /system/bin/fat.format.real
-			log "fat.format renamed to fat.format.real"
-		fi
-
 		cat /voodoo/system_scripts/fat.format_wrapper.sh > /system/bin/fat.format_wrapper.sh
 		chmod 755 /system/bin/fat.format_wrapper.sh
-
-		ln -s fat.format_wrapper.sh /system/bin/fat.format
 		log "fat.format wrapper installed"
 	else
 		log "fat.format wrapper already installed"
+	fi
+
+	# now, check the validity of the symlink	
+	if ! test -L /system/bin/fat.format && test -x /system/bin/fat.format_wrapper.sh ; then
+
+		# if fat.format is not a symlink, it means that it's
+		# Samsung's binary. Let's rename it
+		mv /system/bin/fat.format /system/bin/fat.format.real
+		ln -s fat.format_wrapper.sh /system/bin/fat.format
+		log "fat.format renamed to fat.format.real & symlink created to fat.format_wrapper.sh"
 	fi
 }
 
