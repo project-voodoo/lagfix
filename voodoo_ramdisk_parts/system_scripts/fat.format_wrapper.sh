@@ -8,7 +8,6 @@
 exec >> /voodoo/logs/fat.format_wrapper.log 2>&1
 export PATH=/system/bin:/bin
 
-
 # back 2 levels
 parent_pid=`cut -d" " -f4 /proc/self/stat`
 parent_pid=`cut -d" " -f4 /proc/$parent_pid/stat`
@@ -16,7 +15,7 @@ parent_name=`cat /proc/$parent_pid/cmdline`
 
 case $parent_name in
 	/init_samsung)
-		if ls /voodoo/run/voodoo_data_mounted; then
+		if ls /voodoo/run/voodoo_data_mounted > /dev/null 2>&1 ; then
 			echo "Ext4 activated and fat.format called by init_samsung. nothing done"
 			exit 0
 		fi
