@@ -155,24 +155,24 @@ check_free() {
 }
 
 detect_valid_ext4_filesystem() {
-	log "ext4 filesystem detection"
+	log "Ext4 filesystem detection"
 	if tune2fs -l $data_partition; then
 		# we found an ext2/3/4 partition. but is it real ?
 		# if the data partition mounts as rfs, it means
-		# that this ext4 partition is just lost bits still here
+		# that this Ext4 partition is just lost bits still here
 		if mount_ data_rfs; then
-			log "ext4 bits found but from an invalid and corrupted filesystem"
+			log "Ext4 bits found but from an invalid and corrupted filesystem"
 			return 1
 		fi
-		log "ext4 filesystem detected"
+		log "Ext4 filesystem detected"
 		return 0
 	fi
-	log "no ext4 filesystem detected"
+	log "no Ext4 filesystem detected"
 	return 1
 }
 
 wipe_data_filesystem() {
-	# ext4 is very hard to wipe due to it's superblock which provide
+	# Ext4 is very hard to wipe due to it's superblock which provide
 	# much security, so we wipe the start of the partition (3MB)
 	# wich does enouch to prevent blkid to detect Ext4.
 	# RFS is also seriously hit by 3MB of zeros ;)
@@ -328,7 +328,7 @@ insmod /lib/modules/fsr_stl.ko
 insmod /lib/modules/rfs_glue.ko
 insmod /lib/modules/rfs_fat.ko
 
-# insmod ext4 modules for injected ramdisks
+# insmod Ext4 modules for injected ramdisks
 test -f /lib/modules/jbd2.ko && insmod /lib/modules/jbd2.ko
 test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
 
@@ -366,7 +366,7 @@ if test -f /cache/recovery/command; then
 	if test `cat /cache/recovery/command | cut -d '-' -f 3` = 'wipe_data'; then
 		log "MASTER_CLEAR mode"
 		say "factory-reset"
-		# if we are in this mode, we still have to wipe ext4 partition start
+		# if we are in this mode, we still have to wipe Ext4 partition start
 		wipe_ext4
 		umount /cache
 		letsgo
@@ -400,7 +400,7 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 	if detect_valid_ext4_filesystem; then
 
 		log "lag fix disabled and Ext4 detected"
-		# ext4 partition detected, let's convert it back to rfs :'(
+		# Ext4 partition detected, let's convert it back to rfs :'(
 		# mount resources
 		mount_ data_ext4
 		mount_ dbdata
@@ -411,7 +411,7 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 		# check if there is enough free space for migration or cancel
 		# and boot
 		if ! check_free; then
-			log "not enough space to migrate from ext4 to rfs"
+			log "not enough space to migrate from Ext4 to rfs"
 			say "cancel-no-space"
 			mount_ data_ext4
 			> /voodoo/run/voodoo_data_mounted
@@ -450,7 +450,7 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 
 	else
 
-		# in this case, we did not detect any valid ext4 partition
+		# in this case, we did not detect any valid Ext4 partition
 		# hopefully this is because $data_partition contains a valid rfs /data
 		log "lag fix disabled, rfs present"
 		log "mount /data as rfs"
@@ -464,13 +464,13 @@ if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 fi
 
 # Voodoo lagfix is enabled
-# detect if the data partition is in ext4 format
+# detect if the data partition is in Ext4 format
 log "lag fix enabled"
 if ! detect_valid_ext4_filesystem ; then
 
-	log "no valid ext4 partition detected"
+	log "no valid Ext4 partition detected"
 
-	# no ext4 filesystem detected, we will convert to ext4
+	# no Ext4 filesystem detected, we will convert to Ext4
 	# mount resources we need
 	log "mount resources to backup"
 	mount_ data_rfs
@@ -480,7 +480,7 @@ if ! detect_valid_ext4_filesystem ; then
 	# check if there is enough free space for migration or cancel
 	# and boot
 	if ! check_free; then
-		log "not enough space to migrate from rfs to ext4"
+		log "not enough space to migrate from rfs to Ext4"
 		say "cancel-no-space"
 		mount_ data_rfs
 		letsgo
@@ -501,8 +501,8 @@ if ! detect_valid_ext4_filesystem ; then
 	log "wipe previous RFS filesystem $data_partition" 
 	wipe_data_filesystem
 	
-	# build the ext4 filesystem
-	log "build the ext4 filesystems"
+	# build the Ext4 filesystem
+	log "build the Ext4 filesystems"
 	
 
 	# Ext4 DATA 
@@ -524,8 +524,8 @@ if ! detect_valid_ext4_filesystem ; then
 
 else
 
-	# seems that we have a ext4 partition ;) just mount it
-	log "valid ext4 detected, mounting ext4 /data !"
+	# seems that we have a Ext4 partition ;) just mount it
+	log "valid Ext4 detected, mounting Ext4 /data !"
 	e2fsck -p $data_partition
 	mount_ data_ext4
 	> /voodoo/run/voodoo_data_mounted
