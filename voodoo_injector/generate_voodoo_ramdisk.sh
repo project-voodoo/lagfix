@@ -63,16 +63,15 @@ cp -ax $my_pwd/$voodoo_ramdisk_parts/* voodoo/
 # make sure su binary (Superuser.apk) is fully suid
 chmod 06755 voodoo/root/sbin/su
 
-
 # empty directories, probably not in gits
 mkdir dev 2>/dev/null
 mkdir proc 2>/dev/null
 mkdir sys 2>/dev/null
 mkdir system 2>/dev/null
-
 mkdir dev/block
 mkdir dev/snd
 mkdir voodoo/tmp
+mkdir voodoo/tmp/sdcard
 mkdir voodoo/root/usr
 
 
@@ -86,7 +85,7 @@ ln -s ../bin/busybox bin/insmod
 
 
 # create the main init symlink
-ln -s voodoo/scripts/init_logger.sh init
+ln -s voodoo/scripts/init_runner.sh init
 #ln -s init_samsung init
 
 

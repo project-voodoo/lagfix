@@ -1,3 +1,1 @@
 data_partition="/dev/block/mmcblk0p2"
-sdcard_partition="/dev/block/mmcblk0p1"
-sdcard_ext_partition="/dev/block/mmcblk1"

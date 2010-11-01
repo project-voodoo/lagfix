@@ -7,7 +7,8 @@
 #                                                                             #
 #    Devices supported and tested :                                           #
 #      o Galaxy S international - GT-I9000 8GB and 16GB                       #
-#      o Bell Vibrant GT-I9000B                                               #
+#      o Galaxy S GT-I9000T                                                   #
+#      o Bell Vibrant GT-I9000M                                               #
 #      o T-Mobile Vibrant                                                     #
 #      o AT&T Captivate                                                       #
 #      o Verizon Fascinate                                                    #
@@ -36,9 +37,7 @@ set -x
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin:/system/xbin
 
 sdcard='/voodoo/tmp/sdcard'
-sdcard_ext='/voodoo/tmp/sdcard_ext'
 data_archive="$sdcard/voodoo_user-data.tar"
-
 dbdata_partition="/dev/block/stl10"
 
 alias check_dbdata="fsck_msdos -y $dbdata_partition"
@@ -60,12 +59,6 @@ mount_() {
 		;;
 		data_ext4)
 			mount -t ext4 -o noatime,barrier=0,noauto_da_alloc $data_partition /data
-		;;
-		sdcard)
-			mount -t vfat -o utf8 $sdcard_partition $sdcard
-		;;
-		sdcard_ext)
-			mount -t vfat -o utf8 $sdcard_ext_partition $sdcard_ext 2>/dev/null
 		;;
 	esac
 }
@@ -202,7 +195,7 @@ restore_backup() {
 
 log() {
 	log="Voodoo: $1"
-	echo -e "\n  ###  $log\n" >> /voodoo/logs/init.log
+	echo -e "\n  ###  $log\n" >> /voodoo/tmp/sdcard/init.log
 	echo `date '+%Y-%m-%d %H:%M:%S'` $log >> /voodoo/logs/voodoo.log
 }
 
@@ -305,14 +298,6 @@ letsgo() {
 
 		init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
 		cat /voodoo/logs/init.log > $sdcard/Voodoo/logs/$init_log_filename
-
-		# copy logs also on external SD if available
-		if mount_ sdcard_ext; then
-			mkdir $sdcard_ext/Voodoo-logs 2>/dev/null
-			cat /voodoo/logs/init.log > $sdcard_ext/Voodoo-logs/$init_log_filename
-			umount $sdcard_ext
-		fi
-
 	else
 		# clean debugs logs too
 		rm -r $sdcard/Voodoo/logs 2>/dev/null
@@ -321,15 +306,14 @@ letsgo() {
 	# remove voices from memory
 	rm -r /voodoo/voices
 
-	umount $sdcard
 	# set the etc to Android standards
 	rm /etc
 	# on Froyo ramdisk, there is no etc to /etc/system symlink anymore
 
 	umount /system
 
-	# run Samsung's init and disappear
-	exec /init_samsung
+	# exit this main script (the runner will execute samsung_init )
+	exit
 }
 
 # STAGE 1
@@ -337,9 +321,6 @@ letsgo() {
 # proc and sys are  used 
 mount -t proc proc /proc
 mount -t sysfs sys /sys
-
-# create used devices nodes
-create_devices.sh
 
 # insmod required modules
 insmod /lib/modules/fsr.ko
@@ -354,11 +335,6 @@ test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
 # using what /system partition has to offer
 mount -t rfs -o rw,check=no /dev/block/stl9 /system
 
-# make a temporary tmp directory ;)
-mkdir /tmp
-mkdir /voodoo/tmp/sdcard
-mkdir /voodoo/tmp/sdcard_ext
-
 # detect the model using the system build.prop
 if ! detect_supported_model_and_setup_device_names; then
 	# the hardware model is unknown
@@ -366,9 +342,6 @@ if ! detect_supported_model_and_setup_device_names; then
 	# try to attempt a boot through the standard procedure
 	letsgo
 fi
-
-# mounting also the internal sdcard
-mount_ sdcard
 
 # we will need these directories
 mkdir /cache 2> /dev/null
