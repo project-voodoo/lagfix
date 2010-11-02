@@ -62,20 +62,31 @@ find -name '.git*' -exec rm {} \;
 echo '#!/bin/sh
 # Voodoo multiboot from external script
 # logging
-exec >> multiboot_init.log 2>&1
+exec > multiboot_init.log 2>&1
+
+log()
+{
+	echo "Voodoo multiboot: $*"
+}
 
 export PATH=/bin:/sbin
 
 # make the useful device
 mknod /dev/block/mmcblk1 b 179 8
 
-if mount -t vfat -o utf8 /dev/block/mmcblk1 /multiboot_external_sd/; then
-	if tar xf /multiboot_external_sd/multiboot_ramdisk.tar; then
-		test -x /pre-init.sh && /pre-init.sh
-		exec /init_multiboot
-	fi
+if mount -t vfat -o utf8,uid=1000,gid=1015 /dev/block/mmcblk1 /multiboot_external_sd; then
+		if tar xf /multiboot_external_sd/multiboot_ramdisk.tar; then
+			test -x /pre-init.sh && /pre-init.sh
+			exec /init
+		else
+			log "no tar file"
+			umount /multiboot_external_sd
+		fi
+else
+	log "unable to mount the external sd"
 fi
 
+log "running samsung init"
 exec /init_samsung' > init
 
 chmod 755 init
