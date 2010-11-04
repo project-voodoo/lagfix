@@ -138,7 +138,7 @@ echo '#!/bin/sh
 export PATH=/bin
 
 lzcat compressed_voodoo_ramdisk.tar.lzma | tar x
-exec /voodoo/scripts/init_logger.sh' > init
+exec /voodoo/scripts/init_runner.sh' > init
 chmod 755 init
 mv voodoo/root/bin .
 
