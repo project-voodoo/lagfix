@@ -5,7 +5,7 @@ DEST=$my_pwd"/stages/stage2.tar.lzma"
 
 cd target
 
-find \
+tar cvf - \
         etc/mke2fs.conf \
         lib/ \
         usr/sbin/mkfs.* \
@@ -20,6 +20,6 @@ find \
         usr/lib/libss.so* \
         usr/lib/libe2p.* \
         usr/lib/libcom_err.* \
-        | xargs tar cv | lzma -9  > $DEST
+        | lzma -9  > $DEST
 
 ls -lh $DEST

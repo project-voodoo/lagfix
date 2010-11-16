@@ -5,6 +5,6 @@ DEST=$my_pwd"/stages/stage1.tar"
 
 cd target
 
-find bin/ | xargs tar cvf $DEST
+tar cvf $DEST bin/
 
 ls -lh $DEST
