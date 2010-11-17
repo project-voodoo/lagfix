@@ -175,9 +175,6 @@ mkdir -p /etc
 mkdir -p /datadata
 chmod 4777 /sbin/su
 umount /efs
-umount /system
-umount /data
-umount /dbdata
 " > /sbin/postrecoveryboot.sh
 
 # run the actual recovery

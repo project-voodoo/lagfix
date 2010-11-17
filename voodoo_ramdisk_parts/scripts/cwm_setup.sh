@@ -1,4 +1,6 @@
 #!/bin/sh
+set -x
+
 export PATH=/bin:/sbin:/system/bin
 
 # be sure file owners are root
