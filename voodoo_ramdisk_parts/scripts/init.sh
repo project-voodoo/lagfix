@@ -137,6 +137,7 @@ if in_recovery; then
 			# if we are in this mode, we still have to wipe Ext4 partition start
 			rfs_format data
 
+			log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
 			convert cache $cache_partition $cache_fs rfs && cache_fs=rfs
 			convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs
 		
@@ -170,7 +171,6 @@ fi
 if test "$lagfix_enabled" = 1; then
 
 	if ! in_recovery; then
-		log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
 		convert cache $cache_partition $cache_fs ext4 && cache_fs=ext4
 		convert dbdata $dbdata_partition $dbdata_fs ext4 && dbdata_fs=ext4
 	fi
