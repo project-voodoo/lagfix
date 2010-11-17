@@ -177,8 +177,10 @@ fi
 if test "$lagfix_enabled" = 1; then
 
 	if ! in_recovery; then
+		silent=1
 		convert cache $cache_partition $cache_fs ext4 && cache_fs=ext4
 		convert dbdata $dbdata_partition $dbdata_fs ext4 && dbdata_fs=ext4
+		silent=0
 	fi
 	convert data $data_partition $data_fs ext4 && data_fs=ext4
 	convert system $system_partition $system_fs ext4 && system_fs=ext4
@@ -192,8 +194,10 @@ if test "$lagfix_enabled" = 1; then
 	letsgo
 else
 
+	silent=1
 	convert data $data_partition $data_fs rfs && data_fs=rfs
 	convert cache $cache_partition $cache_fs rfs && cache_fs=rfs
+	silent=0
 	convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs
 	convert system $system_partition $system_fs rfs && system_fs=rfs
 	
