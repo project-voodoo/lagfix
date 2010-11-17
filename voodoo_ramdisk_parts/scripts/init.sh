@@ -138,8 +138,10 @@ if in_recovery; then
 			rfs_format data
 
 			log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
+			silent=1
 			convert cache $cache_partition $cache_fs rfs && cache_fs=rfs
 			convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs
+			silent=0
 		
 			letsgo
 		fi
@@ -161,8 +163,12 @@ if in_recovery; then
 	else
 		# stock recovery don't handle /cache or /dbdata in Ext4
 		# give them rfs filesystems
+
+		log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
+		silent=1
 		convert cache $cache_partition $cache_fs rfs &&	cache_fs=rfs
 		convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs
+		silent=0
 	fi
 	
 	umount /cache

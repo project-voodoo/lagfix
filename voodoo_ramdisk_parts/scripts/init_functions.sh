@@ -162,6 +162,7 @@ log()
 
 say()
 {
+	test "$silent" = 1 && return
 	# sound system lazy loader
 	if load_soundsystem; then 
 		# play !
