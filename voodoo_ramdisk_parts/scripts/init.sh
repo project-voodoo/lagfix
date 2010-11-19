@@ -78,6 +78,9 @@ fi
 # find what we got
 detect_all_filesystems
 
+# find kernel version
+configure_from_kernel_version
+
 # using what /system partition has to offer
 mount_ system
 # copy the sound configuration

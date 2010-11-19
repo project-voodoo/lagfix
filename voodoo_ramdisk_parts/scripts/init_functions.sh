@@ -6,7 +6,7 @@ mount_()
 		cache)
 			if test "$cache_fs" = "ext4"; then
 				e2fsck -p $cache_partition
-				mount -t ext4 -o noatime,barrier=0,data=writeback $cache_partition /cache
+				mount -t ext4 -o noatime,barrier=0,data=writeback$ext4_options $cache_partition /cache
 			else
 				mount -t rfs -o nosuid,nodev,check=no $cache_partition /cache
 			fi
@@ -14,7 +14,7 @@ mount_()
 		dbdata)
 			if test "$dbdata_fs" = "ext4"; then
 				e2fsck -p $dbdata_partition
-				mount -t ext4 -o noatime,barrier=0 $dbdata_partition /dbdata
+				mount -t ext4 -o noatime,barrier=0$ext4_options $dbdata_partition /dbdata
 			else
 				mount -t rfs -o nosuid,nodev,check=no $dbdata_partition /dbdata
 			fi
@@ -22,7 +22,7 @@ mount_()
 		data)
 			if test "$data_fs" = "ext4"; then
 				e2fsck -p $data_partition
-				mount -t ext4 -o noatime,barrier=0 $data_partition /data
+				mount -t ext4 -o noatime,barrier=0$ext4_options $data_partition /data
 			else
 				mount -t rfs -o nosuid,nodev,check=no $data_partition /data
 			fi
@@ -30,7 +30,7 @@ mount_()
 		system)
 			if test "$system_fs" = "ext4"; then
 				e2fsck -p $system_partition
-				mount -t ext4 -o noatime,barrier=0 $system_partition /system
+				mount -t ext4 -o noatime,barrier=0$ext4_options $system_partition /system
 			else
 				mount -t rfs -o rw,check=no $system_partition /system
 			fi
@@ -168,6 +168,15 @@ detect_all_filesystems()
 }
 
 
+configure_from_kernel_version()
+{
+	if test "`cat /proc/version | cut -d'.' -f 3`" = 32; then
+		kversion="2.6.32"
+		ext4_options=",noauto_da_alloc"
+	fi
+}
+
+
 log()
 {
 	indent=""
@@ -255,6 +264,9 @@ enough_space_to_convert()
 	
 	mount_ $resource
 	
+	# make sure df is there
+	df || return 1
+
 	# read free space on internal SD
 	target_free=$((`df $sdcard | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
 
@@ -370,8 +382,6 @@ convert()
 		tune2fs -c 100 -i 100d -m 0 $partition
 	fi
 
-	mount_ system
-
 	log "restore $resource" 1
 	say "step2"
 
@@ -385,6 +395,10 @@ convert()
 	rm $sdcard/voodoo_conversion.tar
 	
 	umount /voodoo/tmp/mnt/
+
+	# remount /system
+	test "$resource" = "system" && system_fs=$dest_fs
+	mount_ system
 }
 
 
@@ -433,7 +447,7 @@ letsgo()
 
 		init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
 		cp /voodoo/logs/init.log $sdcard/Voodoo/logs/$init_log_filename
-		rm $sdcard/Voodoo/init.log
+		rm $sdcard/init.log
 	else
 		# clean debugs logs too
 		rm -r $sdcard/Voodoo/logs 2>/dev/null
