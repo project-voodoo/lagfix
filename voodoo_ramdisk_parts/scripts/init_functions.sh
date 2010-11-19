@@ -419,7 +419,8 @@ letsgo()
 		rm /voodoo/logs/voodoo_log.txt
 
 		init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
-		mv /voodoo/logs/init.log $sdcard/Voodoo/logs/$init_log_filename
+		cp /voodoo/logs/init.log $sdcard/Voodoo/logs/$init_log_filename
+		rm $sdcard/Voodoo/init.log
 	else
 		# clean debugs logs too
 		rm -r $sdcard/Voodoo/logs 2>/dev/null
