@@ -14,19 +14,19 @@ echo "\nformat $resource_to_format:\n"
 
 case $resource_to_format in
 	cache)
-		dd if=/dev/zero of=$cache_partition bs=1024 count=$(( 1024 * 1 ))
+		dd if=/dev/zero of=$cache_partition bs=1024 count=$(( 1024 * 1 )); sync
 		fat.format -v -S 4096 -s 1 -F 16 $cache_partition
 	;;
 	dbdata)
-		dd if=/dev/zero of=$dbdata_partition bs=1024 count=$(( 1024 * 1 ))
+		dd if=/dev/zero of=$dbdata_partition bs=1024 count=$(( 1024 * 1 )); sync
 		fat.format -v -S 4096 -s 1 -F 16 $dbdata_partition
 	;;
 	data)
-		dd if=/dev/zero of=$data_partition bs=1024 count=$(( 1024 * 3 ))
+		dd if=/dev/zero of=$data_partition bs=1024 count=$(( 1024 * 3 )); sync
 		fat.format -v -S 4096 -s 4 -F 32 $data_partition
 	;;
 	system)
-		dd if=/dev/zero of=$system_partition bs=1024 count=$(( 1024 * 2 ))
+		dd if=/dev/zero of=$system_partition bs=1024 count=$(( 1024 * 2 )); sync
 		fat.format -v -S 4096 -s 1 -F 32 $system_partition
 	;;
 esac
