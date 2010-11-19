@@ -1,5 +1,5 @@
 #!/bin/sh
-
+set -x
 exec > /voodoo/logs/cwm_start.log 2>&1
 
 # froyo make /sdcard a symlink to /mnt/sdcard, which confuses CWM
@@ -162,12 +162,6 @@ ln -s busybox /sbin/yes
 ln -s busybox /sbin/zcat
 
 
-# shorter /sbin/busybox sh -c /sbin/killrecovery.sh
-mkdir -p /sd-ext
-rm /cache/recovery/command
-rm /cache/update.zip
-touch /tmp/.ignorebootmessage
-
 # also shorter
 echo "#!/sbin/sh
 rm /etc
@@ -175,8 +169,12 @@ mkdir -p /etc
 mkdir -p /datadata
 chmod 4777 /sbin/su
 umount /efs
+umount /system
+umount /dbdata
+umount /cache
 " > /sbin/postrecoveryboot.sh
+
+cat  /sbin/postrecoveryboot.sh
 
 # run the actual recovery
 /sbin/recovery &
-

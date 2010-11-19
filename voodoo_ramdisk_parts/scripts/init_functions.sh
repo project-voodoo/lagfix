@@ -4,28 +4,36 @@ mount_()
 {
 	case $1 in
 		cache)
-			test "$cache_fs" = "ext4" && \
-			e2fsck -p $cache_partition
-			mount -t ext4 -o noatime,barrier=0,noauto_da_alloc,data=writeback $cache_partition /cache || \
-			mount -t rfs -o nosuid,nodev,check=no $cache_partition /cache
+			if test "$cache_fs" = "ext4"; then
+				e2fsck -p $cache_partition
+				mount -t ext4 -o noatime,barrier=0,data=writeback $cache_partition /cache
+			else
+				mount -t rfs -o nosuid,nodev,check=no $cache_partition /cache
+			fi
 		;;
 		dbdata)
-			test "$dbdata_fs" = "ext4" && \
-			e2fsck -p $dbdata_partition
-			mount -t ext4 -o noatime,barrier=0,noauto_da_alloc $dbdata_partition /dbdata || \
-			mount -t rfs -o nosuid,nodev,check=no $dbdata_partition /dbdata
+			if test "$dbdata_fs" = "ext4"; then
+				e2fsck -p $dbdata_partition
+				mount -t ext4 -o noatime,barrier=0 $dbdata_partition /dbdata
+			else
+				mount -t rfs -o nosuid,nodev,check=no $dbdata_partition /dbdata
+			fi
 		;;
 		data)
-			test "$data_fs" = "ext4" && \
-			e2fsck -p $data_partition
-			mount -t ext4 -o noatime,barrier=0,noauto_da_alloc $data_partition /data || \
-			mount -t rfs -o nosuid,nodev,check=no $data_partition /data
+			if test "$data_fs" = "ext4"; then
+				e2fsck -p $data_partition
+				mount -t ext4 -o noatime,barrier=0 $data_partition /data
+			else
+				mount -t rfs -o nosuid,nodev,check=no $data_partition /data
+			fi
 		;;
 		system)
-			test "$system_fs" = "ext4" && \
-			e2fsck -p $system_partition
-			mount -t ext4 -o noatime,barrier=0,noauto_da_alloc $system_partition /system || \
-			mount -t rfs -o rw,check=no $system_partition /system
+			if test "$system_fs" = "ext4"; then
+				e2fsck -p $system_partition
+				mount -t ext4 -o noatime,barrier=0 $system_partition /system
+			else
+				mount -t rfs -o rw,check=no $system_partition /system
+			fi
 		;;
 	esac
 }
@@ -33,7 +41,8 @@ mount_()
 
 mount_tmp()
 {
-	mount -t rfs -o check=no $1 /voodoo/tmp/mnt/ || mount -t ext4 $1 -o barrier=0 /voodoo/tmp/mnt/
+	# used during conversions and detection
+	mount -t ext4 $1 -o barrier=0 /voodoo/tmp/mnt/ || mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
 }
 
 
@@ -154,8 +163,7 @@ detect_all_filesystems()
 log()
 {
 	indent=""
-	test "$2" = 1 && indent="    "
-	test "$2" = 2 && indent="        "
+	test "$2" = 1 && indent="    " || test "$2" = 2 && indent="        "
 	echo "`date '+%Y-%m-%d %H:%M:%S'` $indent $1" >> /voodoo/logs/voodoo.log
 }
 
@@ -198,26 +206,31 @@ load_soundsystem()
 }
 
 
-verify_voodoo_install_in_system()
+verify_voodoo_install()
 {
-	# if the wrapper is not the same as the one in this ramdisk, we install it
-	if ! cmp /voodoo/system_scripts/fat.format_wrapper.sh /system/bin/fat.format_wrapper.sh; then
+	for x in /sbin/fat.format /system/bin/fat.format; do
+		# manage Froyo & Eclair
+		test "$x" = "/sbin/fat.format" && prefix="/sbin" || prefix="/system/bin"
+		test -x "$prefix/fat.format" && log "manage fat.format in $prefix" || continue
 
-		cp /voodoo/system_scripts/fat.format_wrapper.sh /system/bin/fat.format_wrapper.sh
-		log "fat.format wrapper installed in /system"
-	else
-		log "fat.format wrapper already installed in /system"
-	fi
+		# if the wrapper is not the same as the one in this ramdisk, we install it
+		if ! cmp /voodoo/system_scripts/fat.format_wrapper.sh "$prefix/fat.format_wrapper.sh"; then
+			cp /voodoo/system_scripts/fat.format_wrapper.sh "$prefix/fat.format_wrapper.sh"
+			log "fat.format wrapper installed in $prefix"
+		else
+			log "fat.format wrapper already installed in $prefix"
+		fi
 
-	# now, check the validity of the symlink	
-	if ! test -L /system/bin/fat.format && test -x /system/bin/fat.format_wrapper.sh ; then
+		# now, check the validity of the symlink
+		if ! test -L "$prefix/fat.format" && test -x "$prefix/fat.format_wrapper.sh" ; then
 
-		# if fat.format is not a symlink, it means that it's
-		# Samsung's binary. Let's rename it
-		mv /system/bin/fat.format /system/bin/fat.format.real
-		ln -s fat.format_wrapper.sh /system/bin/fat.format
-		log "fat.format renamed to fat.format.real & symlink created to fat.format_wrapper.sh"
-	fi
+			# if fat.format is not a symlink, it means that it's
+			# Samsung's binary. Let's rename it
+			mv "$prefix/fat.format" "$prefix/fat.format.real"
+			ln -s fat.format_wrapper.sh "$prefix/fat.format"
+			log "fat.format renamed to fat.format.real & symlink created to fat.format_wrapper.sh"
+		fi
+	done
 }
 
 
@@ -338,7 +351,10 @@ convert()
 			features='sparse_super,'
 		else
 			journal_size=4
+			features=''
 		fi
+		echo "wipe clean RFS partition"
+		dd if=/dev/zero of=$partition bs=1024 count=$(( 5 * 1024 ))
 		mkfs.ext4 -F -O "$features"^resize_inode -J size=$journal_size -T default $partition
 		# force check the filesystem after 100 mounts or 100 days
 		tune2fs -c 100 -i 100d -m 0 $partition
@@ -361,17 +377,17 @@ convert()
 
 letsgo()
 {
-	rm -r /system_in_ram 2>/dev/null
+	rm -rf /system_in_ram
 	
 	# remove the tarball in maximum compression mode
-	rm compressed_voodoo_ramdisk.tar.lzma 2>/dev/null
+	rm -f compressed_voodoo_ramdisk.tar.lzma
 	
 	# dump logs to the sdcard
 	# create the Voodoo dir in sdcard if not here already
 	test -f $sdcard/Voodoo && rm $sdcard/Voodoo
 	mkdir $sdcard/Voodoo 2>/dev/null
 
-	verify_voodoo_install_in_system
+	verify_voodoo_install
 	
 	# run additionnal extensions scripts
 	# actually they are sourced so they can use the init functions,
@@ -403,7 +419,7 @@ letsgo()
 		rm /voodoo/logs/voodoo_log.txt
 
 		init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
-		cp /voodoo/logs/init.log $sdcard/Voodoo/logs/$init_log_filename
+		mv /voodoo/logs/init.log $sdcard/Voodoo/logs/$init_log_filename
 	else
 		# clean debugs logs too
 		rm -r $sdcard/Voodoo/logs 2>/dev/null

@@ -45,7 +45,7 @@ sdcard='/voodoo/tmp/sdcard'
 . /voodoo/scripts/init_functions.sh
 
 # enable this for development
-#debug_mode=1
+debug_mode=1
 
 
 # STAGE 1
@@ -195,10 +195,10 @@ if test "$lagfix_enabled" = 1; then
 else
 
 	silent=1
-	convert data $data_partition $data_fs rfs && data_fs=rfs
 	convert cache $cache_partition $cache_fs rfs && cache_fs=rfs
-	silent=0
 	convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs
+	silent=0
+	convert data $data_partition $data_fs rfs && data_fs=rfs
 	convert system $system_partition $system_fs rfs && system_fs=rfs
 	
 	letsgo

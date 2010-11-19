@@ -20,3 +20,8 @@ cp -rpf /voodoo/cwm/res/* /res
 chmod 755 /voodoo/cwm/sbin/*
 cp -rpf /voodoo/cwm/sbin/* /sbin
 
+# shorter /sbin/busybox sh -c /sbin/killrecovery.sh
+mkdir -p /sd-ext
+rm /cache/recovery/command
+rm /cache/update.zip
+> /tmp/.ignorebootmessage

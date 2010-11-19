@@ -4,7 +4,7 @@
 # acts 100% normally if not run by samsung init in Voodoo lagfix in Ext4 mode
 # partition is $7 when called by init_samsung
 
-export PATH=/system/bin:/bin
+export PATH=/system/bin:/bin:/sbin
 
 # back 2 levels
 parent_pid=`cut -d" " -f4 /proc/self/stat`

@@ -7,7 +7,7 @@
 # use a standard ramdisk directory as input, and make it Voodoo!
 # recommanded to wipe the destination directory first
 #
-# usage: generate_voodoo_ramdisk.sh stock_ramdisk voodoo_ramdisks voodoo_ramdisk_parts stages_source
+# usage: generate_voodoo_ramdisk.sh stock_ramdisk voodoo_ramdisks voodoo_ramdisk_parts stages_source build_only_uncompressed
 #
 
 make_cpio() {
@@ -55,10 +55,10 @@ cd $dest/uncompressed
 mv init init_samsung
 
 # change recovery.rc to call a wrapper instead of the real recovery binary
-sed s/"service recovery \/system\/bin\/recovery"/"service recovery \/voodoo\/scripts\/recovery_wrapper.sh"/ recovery.rc > /tmp/recovery.rc
+sed s/"service recovery .*bin\/recovery"/"service recovery \/voodoo\/scripts\/recovery_wrapper.sh"/ recovery.rc > /tmp/recovery.rc
 #cp /tmp/recovery.rc .
 sed s/"service console \/system\/bin\/sh"/''/ /tmp/recovery.rc | \
-	sed s/"   console"/""/ > recovery.rc
+	sed s/".*console$"/""/ > recovery.rc
 
 # run-parts support
 add_run_parts()
@@ -110,6 +110,7 @@ ln -s voodoo/root/bin .
 ln -s voodoo/root/usr .
 # etc symlink will be used only during extraction of stages
 # after that it needs to be removed
+rm etc
 ln -s voodoo/root/etc .
 ln -s ../bin/busybox bin/insmod
 
@@ -156,6 +157,11 @@ cd ..
 
 make_cpio uncompressed
 
+if ! test -n "$5"; then
+	echo "Building only uncompressed ramdisk"
+	exit
+fi
+
 
 # do the smallest one. this one is wickely compressed!
 echo "Build the compressed-smallest ramdisk"
@@ -174,7 +180,7 @@ mv voodoo/root/bin .
 
 rm -r voodoo/voices
 stage0_list="lib/ sbin/ voodoo/ res/ modules/ *.rc init_samsung default.prop"
-find $stage0_list | xargs tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
+find $stage0_list 2>/dev/null | xargs tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
 rm -r $stage0_list
 cd ..
 

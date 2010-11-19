@@ -9,19 +9,24 @@ exec >> /voodoo/logs/rfs_formatter.log 2>&1
 . /voodoo/configs/partitions
 
 resource_to_format="`cat /voodoo/run/rfs_format_what`"
-echo "format $resource_to_format:\n"
+echo "\nformat $resource_to_format:\n"
+
 
 case $resource_to_format in
 	cache)
+		dd if=/dev/zero of=$cache_partition bs=1024 count=$(( 1024 * 1 ))
 		fat.format -v -S 4096 -s 1 -F 16 $cache_partition
 	;;
 	dbdata)
+		dd if=/dev/zero of=$dbdata_partition bs=1024 count=$(( 1024 * 1 ))
 		fat.format -v -S 4096 -s 1 -F 16 $dbdata_partition
 	;;
 	data)
+		dd if=/dev/zero of=$data_partition bs=1024 count=$(( 1024 * 3 ))
 		fat.format -v -S 4096 -s 4 -F 32 $data_partition
 	;;
 	system)
+		dd if=/dev/zero of=$system_partition bs=1024 count=$(( 1024 * 2 ))
 		fat.format -v -S 4096 -s 1 -F 32 $system_partition
 	;;
 esac

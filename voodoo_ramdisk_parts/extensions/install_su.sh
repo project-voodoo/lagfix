@@ -14,18 +14,28 @@ extension_install_su()
 	log "$name now installed"
 }
 
-# test if the su binary already exist in xbin
-if test -u $dest ; then
-	# okay, the su binary exist and is already suid
-	if test $source -nt $dest; then
+install_condition()
+{
+	test -d "/system/xbin"
+}
 
-		# but it's older than ours ! let's updated it
-		extension_install_su
+
+if install_condition; then
+	# test if the su binary already exist in xbin
+	if test -u $dest ; then
+		# okay, the su binary exist and is already suid
+		if test $source -nt $dest; then
+
+			# but it's older than ours ! let's updated it
+			extension_install_su
+		else
+			# ours is the same or older, don't touch it
+			log "$name already installed"
+		fi
 	else
-		# ours is the same or older, don't touch it
-		log "$name already installed"
-	fi	
+		# not here or not setup properly, let's install su
+		extension_install_su
+	fi
 else
-	# not here or not setup properly, let's install su
-	extension_install_su
+	log "$name cannot be installed"
 fi
