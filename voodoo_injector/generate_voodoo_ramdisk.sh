@@ -110,7 +110,7 @@ ln -s voodoo/root/bin .
 ln -s voodoo/root/usr .
 # etc symlink will be used only during extraction of stages
 # after that it needs to be removed
-rm etc
+rm -f etc
 ln -s voodoo/root/etc .
 ln -s ../bin/busybox bin/insmod
 

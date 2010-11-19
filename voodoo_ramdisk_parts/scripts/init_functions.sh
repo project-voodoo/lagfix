@@ -45,6 +45,14 @@ mount_tmp()
 	mount -t ext4 $1 -o barrier=0 /voodoo/tmp/mnt/ || mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
 }
 
+log_time()
+{
+	test "$1" = "start" && start=`date '+%s'` && return
+	if test "$1" = "end"; then
+		end=`date '+%s'`
+		log 'time spent: '$(( end - start))'s' 1
+	fi
+}
 
 load_stage()
 {
@@ -334,12 +342,14 @@ convert()
 	log "backup $resource" 1
 	say "step1"
 
+	log_time start
 	mount_tmp $partition
 	if ! tar cvf $sdcard/voodoo_conversion.tar /voodoo/tmp/mnt/; then
 		log "ERROR: problem during $resource backup" 1
 		return 1
 	fi
 	umount /voodoo/tmp/mnt/
+	log_time end
 	
 	log "format $partition" 1
 	if test "$dest_fs" = "rfs"; then
@@ -364,11 +374,14 @@ convert()
 
 	log "restore $resource" 1
 	say "step2"
+
+	log_time start
 	mount_tmp $partition
 	if ! tar xvf $sdcard/voodoo_conversion.tar; then
 		log "ERROR: problem during $resource restore" 1
 		return 1
 	fi
+	log_time end
 	rm $sdcard/voodoo_conversion.tar
 	
 	umount /voodoo/tmp/mnt/
