@@ -258,8 +258,34 @@ in_recovery()
 
 detect_cwm_recovery()
 {
-	test -f /cache/update.zip && test -f /cache/recovery/command || \
-		test -d /cwm
+	if  test -f /cache/update.zip && test "$recovery_command" = "--update_package=CACHE:update.zip"; then
+			# check if this is a real CWM update.zip
+
+			log "analyze CACHE:update.zip to see if it's CWM recovery"
+			testdir="/voodoo/tmp/cwm-detection"
+			mkdir $testdir
+			unzip /cache/update.zip sbin/recovery sbin/adbd -d /voodoo/tmp/cwm-detection
+
+			if test -f $testdir/sbin/recovery && test -f $testdir/sbin/adbd; then
+				rm -rf $testdir
+				log "CWM recovery found"
+				return 0
+			fi
+	else
+		if test -d /cwm && test -f /cwm/sbin/recovery && test -f /cwm/sbin/adbd; then
+			# CWM is already present in this ramdisk
+			# run it only if we are not supposed to run other commands
+			# like CSC updates or OTAs
+			log "CWM recovery present in /cwm"
+			if test "$recovery_command" = ''; then
+				log "no recovery command specified, Ok for CWM"
+				return 0
+			else
+				log "recovery command specified, aborting CWM launch"
+				return 1
+			fi
+		fi
+	fi
 }
 
 
@@ -457,6 +483,9 @@ letsgo()
 	
 	# remove voices from memory
 	rm -r /voodoo/voices
+
+	# remove CWM setup files
+	rm -rf /cwm
 
 	# set the etc to Android standards
 	rm /etc

@@ -126,45 +126,46 @@ fi
 if in_recovery; then
 
 	log "in recovery boot mode"
+	mount_ cache
+
+	if test -f /cache/recovery/command; then
+		recovery_command=`cat /cache/recovery/command`
+		log "recovery command: $recovery_command"
+	fi
 
 	# detect the MASTER_CLEAR intent command
 	# this append when you choose to wipe everything from the phone settings,
 	# or when you type *2767*3855# (Factory Reset, datas + SDs wipe)
-	mount_ cache
+	if test "`echo $recovery_command | cut -d '-' -f 3`" = 'wipe_data'; then
+		log "MASTER_CLEAR mode"
+		say "factory-reset"
+		# if we are in this mode, we still have to wipe Ext4 partition start
+		rfs_format data
 
-	if test -f /cache/recovery/command; then
-
-		if test `cat /cache/recovery/command | cut -d '-' -f 3` = 'wipe_data'; then
-			log "MASTER_CLEAR mode"
-			say "factory-reset"
-			# if we are in this mode, we still have to wipe Ext4 partition start
-			rfs_format data
-
-			log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
-			silent=1
-			convert cache $cache_partition $cache_fs rfs && cache_fs=rfs
-			convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs
-			silent=0
-		
-			letsgo
-		fi
+		log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
+		silent=1
+		convert cache $cache_partition $cache_fs rfs && cache_fs=rfs
+		convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs
+		silent=0
 	
+		letsgo
 	fi
+
 
 	if detect_cwm_recovery; then
 		log "CWM Recovery Mode"
-		log "recovery command: `cat /cache/recovery/command`"
 		if test -f /cache/recovery/extendedcommand; then
 			log "CWM extended command: `cat /cache/recovery/extendedcommand`"
 		fi
 		
 		if test -f /cache/update.zip; then
 			mkdir /cwm
-			unzip /cache/update.zip -x META-INF/* -d /cwm
+			unzip -o /cache/update.zip -x META-INF/* -d /cwm
 		fi
 
 		/voodoo/scripts/cwm_setup.sh
 		ln -s /voodoo/scripts/mount_wrapper.sh /sbin/mount
+		> /voodoo/run/cwm_enabled
 	else
 		# stock recovery don't handle /cache or /dbdata in Ext4
 		# give them rfs filesystems

@@ -1,6 +1,6 @@
 #!/bin/sh
 exec >> /voodoo/logs/recovery_wrapper.log 2>&1
-if test -f /cwm/sbin/recovery; then
+if test -f /voodoo/run/cwm_enabled; then
 	echo "starting CWM recovery"
 	/voodoo/scripts/cwm_start.sh&
 else

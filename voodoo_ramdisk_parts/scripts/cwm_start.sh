@@ -14,7 +14,7 @@ ln -s busybox /sbin/awk
 ln -s busybox /sbin/basename
 ln -s busybox /sbin/bbconfig
 ln -s busybox /sbin/bunzip2
-ln -s recovery /sbin/busybox
+#ln -s recovery /sbin/busybox
 ln -s busybox /sbin/bzcat
 ln -s busybox /sbin/bzip2
 ln -s busybox /sbin/cal
@@ -169,9 +169,6 @@ mkdir -p /etc
 mkdir -p /datadata
 chmod 4777 /sbin/su
 umount /efs
-umount /system
-umount /dbdata
-umount /cache
 " > /sbin/postrecoveryboot.sh
 
 cat  /sbin/postrecoveryboot.sh
