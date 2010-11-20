@@ -6,8 +6,9 @@ PATH=/bin:/sbin:/voodoo/scripts
 # create used devices nodes
 create_devices.sh
 
-# mount the sdcard
-mount -t vfat -o utf8 /dev/block/mmcblk0p1 /voodoo/tmp/sdcard
+# mount the sdcard for all Galaxy S || or Fascinate
+mount -t vfat -o utf8 /dev/block/mmcblk0p1 /voodoo/tmp/sdcard || \
+mount -t vfat -o utf8 /dev/block/mmcblk1p1 /voodoo/tmp/sdcard
 
 mv /voodoo/tmp/sdcard/init.log /voodoo/tmp/sdcard/voodoo-init-failed-boot-log-`date '+%Y-%m-%d_%H-%M-%S'`.txt
 /voodoo/scripts/init.sh 2>&1 | tee /voodoo/tmp/sdcard/init.log > /voodoo/logs/init.log
