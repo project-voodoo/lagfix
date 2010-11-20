@@ -286,7 +286,7 @@ detect_cwm_recovery()
 			fi
 		fi
 	fi
-
+	# no CWM detected
 	return 1
 }
 
@@ -389,9 +389,13 @@ convert()
 	say "step1"
 
 	log_time start
+
+	# try to repair broken RFS filesystems
+	fsck_msdosfs -y $partition
+
 	mount_tmp $partition
 	if ! tar cvf $sdcard/voodoo_conversion.tar /voodoo/tmp/mnt/; then
-		log "ERROR: problem during $resource backup" 1
+		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		umount /voodoo/tmp/mnt/
 		return 1
 	fi
@@ -403,6 +407,7 @@ convert()
 		rfs_format $resource
 	else
 		umount /system
+
 		if test $resource = "data"; then
 			journal_size=12
 			features='sparse_super,'
@@ -435,10 +440,6 @@ convert()
 	# remount /system
 	test "$resource" = "system" && system_fs=$dest_fs
 	mount_ system
-
-	# if we get out of the conversion process with an Ext4 filesystem,
-	# it means we need to activate the fat.format wrapper protection
-	test "$dest_fs" = "ext4" && > /voodoo/run/ext4_enabled
 }
 
 
@@ -455,6 +456,10 @@ letsgo()
 	mkdir $sdcard/Voodoo 2>/dev/null
 
 	verify_voodoo_install
+
+	# if /data is an Ext4 filesystem, it means we need to activate
+	# the fat.format wrapper protection
+	test "$data_fs" = "ext4" && > /voodoo/run/ext4_enabled
 	
 	# run additionnal extensions scripts
 	# actually they are sourced so they can use the init functions,
