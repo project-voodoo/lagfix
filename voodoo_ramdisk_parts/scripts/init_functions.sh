@@ -390,14 +390,11 @@ convert()
 
 	log_time start
 
-	# try to repair broken RFS filesystems
-	fsck_msdosfs -y $partition
-
 	mount_tmp $partition
 	if ! tar cvf $sdcard/voodoo_conversion.tar /voodoo/tmp/mnt/; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
-		umount /voodoo/tmp/mnt/
-		return 1
+		log "Continuing the operation anyway as the filesytem of $resource cannot be repaired" 1
+		log "Generally this error comes after an RFS filesystem has been mounted without -o check=no" 1
 	fi
 	umount /voodoo/tmp/mnt/
 	log_time end
