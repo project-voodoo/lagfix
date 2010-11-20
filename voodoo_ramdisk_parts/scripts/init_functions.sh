@@ -437,31 +437,23 @@ letsgo()
 
 	log "running init !"
 
-	# debug_mode = 1 forced here to enable the log saving part during
-	# the froyo experimental tests
-	# because it's set here, it only affect the logs and don't change
-	# other parameters
-	debug_mode=1
-	if test $debug_mode = 1; then
-		# copy some logs in it to help debugging
-		mkdir $sdcard/Voodoo/logs 2>/dev/null
-		
-		# clean up old logs (more than 7 days)
-		find $sdcard/Voodoo/logs/ -mtime +7 -delete
+	# Manage logs
 
-		# manage the voodoo log
-		tail -n 1000 $sdcard/Voodoo/logs/voodoo_log.txt > /voodoo/logs/voodoo_log.txt
-		echo >> /voodoo/logs/voodoo_log.txt
-		cat /voodoo/logs/voodoo_log.txt /voodoo/logs/voodoo.log > $sdcard/Voodoo/logs/voodoo_log.txt
-		rm /voodoo/logs/voodoo_log.txt
+	# copy some logs in it to help debugging
+	mkdir $sdcard/Voodoo/logs 2>/dev/null
 
-		init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
-		cp /voodoo/logs/init.log $sdcard/Voodoo/logs/$init_log_filename
-		rm $sdcard/init.log
-	else
-		# clean debugs logs too
-		rm -r $sdcard/Voodoo/logs 2>/dev/null
-	fi
+	# clean up old logs (more than 7 days)
+	find $sdcard/Voodoo/logs/ -mtime +7 -delete
+
+	# manage the voodoo log
+	tail -n 1000 $sdcard/Voodoo/logs/voodoo_log.txt > /voodoo/logs/voodoo_log.txt
+	echo >> /voodoo/logs/voodoo_log.txt
+	cat /voodoo/logs/voodoo_log.txt /voodoo/logs/voodoo.log > $sdcard/Voodoo/logs/voodoo_log.txt
+	rm /voodoo/logs/voodoo_log.txt
+
+	init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
+	cp /voodoo/logs/init.log $sdcard/Voodoo/logs/$init_log_filename
+	rm $sdcard/init.log
 	
 	# remove voices from memory
 	rm -r /voodoo/voices
