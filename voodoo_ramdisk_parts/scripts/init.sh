@@ -192,7 +192,6 @@ if test "$lagfix_enabled" = 1; then
 	mount_ dbdata
 	mount_ data
 	mount_ system
-	> /voodoo/run/ext4_enabled
 
 	letsgo
 else

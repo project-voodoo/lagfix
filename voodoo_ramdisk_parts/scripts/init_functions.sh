@@ -399,6 +399,10 @@ convert()
 	# remount /system
 	test "$resource" = "system" && system_fs=$dest_fs
 	mount_ system
+
+	# if we get out of the conversion process with an Ext4 filesystem,
+	# it means we need to activate the fat.format wrapper protection
+	test "$dest_fs" = "ext4" && > /voodoo/run/ext4_enabled
 }
 
 
