@@ -180,7 +180,7 @@ if in_recovery; then
 	umount /cache
 fi
 
-if test "$lagfix_enabled" = 1; then
+if test $lagfix_enabled = 1; then
 
 	if ! in_recovery; then
 		silent=1
@@ -200,11 +200,11 @@ if test "$lagfix_enabled" = 1; then
 else
 
 	silent=1
-	convert cache $cache_partition $cache_fs rfs && cache_fs=rfs
-	convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs
+	convert cache $cache_partition $cache_fs rfs && cache_fs=rfs || mount_ cache
+	convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs || mount_ dbdata
 	silent=0
-	convert data $data_partition $data_fs rfs && data_fs=rfs
-	convert system $system_partition $system_fs rfs && system_fs=rfs
+	convert data $data_partition $data_fs rfs && data_fs=rfs || mount_ data
+	convert system $system_partition $system_fs rfs && system_fs=rfs || mount_ system
 	
 	letsgo
 fi

@@ -286,6 +286,8 @@ detect_cwm_recovery()
 			fi
 		fi
 	fi
+
+	return 1
 }
 
 
@@ -390,6 +392,7 @@ convert()
 	mount_tmp $partition
 	if ! tar cvf $sdcard/voodoo_conversion.tar /voodoo/tmp/mnt/; then
 		log "ERROR: problem during $resource backup" 1
+		umount /voodoo/tmp/mnt/
 		return 1
 	fi
 	umount /voodoo/tmp/mnt/
@@ -421,6 +424,7 @@ convert()
 	mount_tmp $partition
 	if ! tar xvf $sdcard/voodoo_conversion.tar; then
 		log "ERROR: problem during $resource restore" 1
+		umount /voodoo/tmp/mnt/
 		return 1
 	fi
 	log_time end
