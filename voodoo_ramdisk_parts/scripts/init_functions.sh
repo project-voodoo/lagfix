@@ -256,6 +256,12 @@ in_recovery()
 	test "`cut -d' ' -f 1 /proc/cmdline`" = "bootmode=2"
 }
 
+detect_cwm_recovery()
+{
+	test -f /cache/update.zip && test -f /cache/recovery/command || \
+		test -d /cwm
+}
+
 
 enough_space_to_convert()
 {

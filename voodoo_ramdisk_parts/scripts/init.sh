@@ -151,16 +151,18 @@ if in_recovery; then
 	
 	fi
 
-	if test -f /cache/update.zip && test -f /cache/recovery/command; then
-
+	if detect_cwm_recovery; then
 		log "CWM Recovery Mode"
 		log "recovery command: `cat /cache/recovery/command`"
 		if test -f /cache/recovery/extendedcommand; then
 			log "CWM extended command: `cat /cache/recovery/extendedcommand`"
 		fi
-		mkdir /voodoo/cwm
-		unzip /cache/update.zip -x META-INF/* -d /voodoo/cwm
 		
+		if test -f /cache/update.zip; then
+			mkdir /cwm
+			unzip /cache/update.zip -x META-INF/* -d /cwm
+		fi
+
 		/voodoo/scripts/cwm_setup.sh
 		ln -s /voodoo/scripts/mount_wrapper.sh /sbin/mount
 	else
