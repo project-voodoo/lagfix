@@ -11,7 +11,6 @@ chmod 755 /sbin/recovery
 ln -s recovery /sbin/busybox
 
 # res stuff
-chmod 755 /cwm/res/sh
 cp -rpf /cwm/res/* /res
 
 # sbin stuff
