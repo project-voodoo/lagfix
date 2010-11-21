@@ -10,8 +10,6 @@ cp /cwm/sbin/recovery /sbin/recovery
 chmod 755 /sbin/recovery
 ln -s recovery /sbin/busybox
 
-# now we have a featured busybox, let's use it
-
 # res stuff
 chmod 755 /cwm/res/sh
 cp -rpf /cwm/res/* /res

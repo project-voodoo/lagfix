@@ -2,6 +2,9 @@
 set -x
 exec > /voodoo/logs/cwm_start.log 2>&1
 
+
+# mostly replicate updater-script behavior from CWM as update.zip
+
 # froyo make /sdcard a symlink to /mnt/sdcard, which confuses CWM
 rm /sdcard
 mkdir /sdcard
