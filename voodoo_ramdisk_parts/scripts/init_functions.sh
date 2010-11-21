@@ -42,8 +42,11 @@ mount_()
 mount_tmp()
 {
 	# used during conversions and detection
-	mount -t ext4 $1 -o barrier=0,noatime /voodoo/tmp/mnt/ || \
-	mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
+	if test "$2" = "ext4"; then
+		mount -t ext4 $1 -o barrier=0,noatime /voodoo/tmp/mnt/
+	else
+		mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
+	fi
 }
 
 log_time()
@@ -297,10 +300,7 @@ enough_space_to_convert()
 	resource=$1
 	log "check space for $resource:" 1
 	
-	# /system is needed for df
-	mount_ system
-	test $resource != system && mount_ $resource
-	
+	mount_ $resource
 	# make sure df is there
 	if ! df; then
 		umount /system
@@ -319,9 +319,8 @@ enough_space_to_convert()
 	# more than 100MB on /data, talk to the user
 	test $space_needed -gt 100 && say "wait"
 
-	# umount the resource and /system
-	test $resource != system && umount /$resource
-	umount /system
+	# umount the resource
+	umount /$resource
 
 	# ask for 10% more free space for security reasons
 	test $target_free -ge $(( $space_needed + $space_needed / 10))
@@ -343,17 +342,11 @@ rfs_format()
 	ln -s init.rc fota.rc
 	ln -s init.rc lpm.rc
 	
-	# if we are not in the middle of system conversion, mount it
-	test "$1" != system && mount_ system
-
 	# run init that will run the actual format script
 	/init_samsung
 	umount /dev/pts
 	umount /dev
 	echo >> $log_dir/rfs_formatter_log.txt
-
-	# umount /system we maybe used
-	umount /system 2>/dev/null
 
 	# let's restore the original .rc files
 	rm *.rc
@@ -389,23 +382,21 @@ convert()
 	fi
 	log "convert $resource ($partition) from $source_fs to $dest_fs"
 
+	copy_system_in_ram
+
 	if ! enough_space_to_convert $resource; then
 		log "ERROR: not enough space to convert $resource" 1
 		say "cancel-no-space"
 		return 1
 	fi
 	
-	if test "$resource" = system && test "$dest_fs" = "rfs"; then
-		# fat.format on Froyo is in /system
-		copy_system_in_ram
-	fi
 
 	log "backup $resource" 1
 	say "step1"
 
 	log_time start
 
-	mount_tmp $partition
+	mount_tmp $partition $source_fs
 	if ! tar cvf $sdcard/voodoo_conversion.tar /voodoo/tmp/mnt/; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "Continuing the operation anyway as the filesytem of $resource cannot be repaired" 1
@@ -437,14 +428,14 @@ convert()
 	say "step2"
 
 	log_time start
-	mount_tmp $partition
+	mount_tmp $partition $dest_fs
 	if ! tar xvf $sdcard/voodoo_conversion.tar; then
 		log "ERROR: problem during $resource restore" 1
 		umount /voodoo/tmp/mnt/
 		return 1
 	fi
 	log_time end
-	rm $sdcard/voodoo_conversion.tar
+	test "$debug_mode" != 1 && rm $sdcard/voodoo_conversion.tar
 	
 	umount /voodoo/tmp/mnt/
 

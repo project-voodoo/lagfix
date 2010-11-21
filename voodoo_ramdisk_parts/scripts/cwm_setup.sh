@@ -21,4 +21,5 @@ cp -rpf /cwm/sbin/* /sbin
 mkdir -p /sd-ext
 rm /cache/recovery/command
 rm /cache/update.zip
+mkdir /tmp/
 > /tmp/.ignorebootmessage
