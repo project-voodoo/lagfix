@@ -2,7 +2,8 @@
 # logger for Voodoo init script
 
 PATH=/bin:/sbin:/voodoo/scripts
-sdcard='/voodoo/tmp/sdcard'
+
+. /voodoo/configs/shared
 
 # create used devices nodes
 create_devices.sh

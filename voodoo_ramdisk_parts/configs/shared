@@ -1,0 +1,2 @@
+# declaration of constants used in several scripts
+sdcard='/voodoo/tmp/sdcard'

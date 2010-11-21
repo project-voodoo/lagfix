@@ -1,5 +1,5 @@
 #!/bin/sh
-exec >> /voodoo/logs/recovery_wrapper.log 2>&1
+exec | tee -a $sdcard/init.log 2>&1 >> /voodoo/logs/recovery_wrapper.log
 if test -f /voodoo/run/cwm_enabled; then
 	echo "starting CWM recovery"
 	/voodoo/scripts/cwm_start.sh&

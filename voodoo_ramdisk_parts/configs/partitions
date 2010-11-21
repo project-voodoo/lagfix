@@ -1,4 +1,4 @@
-# declaration of  partition common for every model
+# declaration of partition common for every model
 dbdata_partition='/dev/block/stl10'
 cache_partition='/dev/block/stl11'
 system_partition='/dev/block/stl9'

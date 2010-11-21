@@ -1,9 +1,12 @@
 #!/bin/sh
 # the strange fat.format wants some specific setup around to run.
 # using init_samsung to provide it and then... killing it without mercy
+. /voodoo/configs/shared
+
 PATH=/bin:/sbin:/system/bin
 set -x
-exec >> /voodoo/logs/rfs_formatter.log 2>&1
+
+exec | tee -a $sdcard/init.log 2>&1 >> /voodoo/logs/rfs_formatter.log 
 
 # load partitions references
 . /voodoo/configs/partitions
