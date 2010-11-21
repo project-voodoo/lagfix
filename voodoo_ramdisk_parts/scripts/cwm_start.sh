@@ -1,8 +1,8 @@
 #!/bin/sh
 set -x
-exec | tee -a $sdcard/init.log 2>&1 > /voodoo/logs/cwm_start.log 2>&1
-
 export PATH=$PATH:/bin
+
+exec > $log_dir/cwm_start_log.txt 2>&1
 # mostly replicate updater-script behavior from CWM as update.zip
 
 # froyo make /sdcard a symlink to /mnt/sdcard, which confuses CWM

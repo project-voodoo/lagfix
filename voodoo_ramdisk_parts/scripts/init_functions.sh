@@ -42,7 +42,8 @@ mount_()
 mount_tmp()
 {
 	# used during conversions and detection
-	mount -t ext4 $1 -o barrier=0 /voodoo/tmp/mnt/ || mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
+	mount -t ext4 $1 -o barrier=0,noatime /voodoo/tmp/mnt/ || \
+	mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
 }
 
 log_time()
@@ -296,10 +297,15 @@ enough_space_to_convert()
 	resource=$1
 	log "check space for $resource:" 1
 	
-	mount_ $resource
+	# /system is needed for df
+	mount_ system
+	test $resource != system && mount_ $resource
 	
 	# make sure df is there
-	df || return 1
+	if ! df; then
+		umount /system
+		return 1
+	fi
 
 	# read free space on internal SD
 	target_free=$((`df $sdcard | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
@@ -313,8 +319,9 @@ enough_space_to_convert()
 	# more than 100MB on /data, talk to the user
 	test $space_needed -gt 100 && say "wait"
 
-	# umount the resource
-	test "$resource" != "system" && umount /$resource
+	# umount the resource and /system
+	test $resource != system && umount /$resource
+	umount /system
 
 	# ask for 10% more free space for security reasons
 	test $target_free -ge $(( $space_needed + $space_needed / 10))
@@ -336,11 +343,17 @@ rfs_format()
 	ln -s init.rc fota.rc
 	ln -s init.rc lpm.rc
 	
+	# if we are not in the middle of system conversion, mount it
+	test "$1" != system && mount_ system
+
 	# run init that will run the actual format script
 	/init_samsung
 	umount /dev/pts
 	umount /dev
-	echo >> /voodoo/logs/rfs_formatter.log
+	echo >> $log_dir/rfs_formatter_log.txt
+
+	# umount /system we maybe used
+	umount /system 2>/dev/null
 
 	# let's restore the original .rc files
 	rm *.rc
@@ -354,6 +367,7 @@ copy_system_in_ram()
 		# save /system stuff
 		log "make a limited copy of /system in ram" 1
 		mkdir /system_in_ram
+		mount_ system
 		cp -rp /system/lib /system_in_ram
 		cp -rp /system/bin /system_in_ram
 		umount /system
@@ -366,14 +380,14 @@ convert()
 {
 	resource="$1"
 	partition="$2"
-	fs="$3"
+	source_fs="$3"
 	dest_fs="$4"
 	
-	if test $fs = $dest_fs; then
+	if test $source_fs = $dest_fs; then
 		log "no need to convert $resource"
 		return
 	fi
-	log "convert $resource ($partition) from $fs to $dest_fs"
+	log "convert $resource ($partition) from $source_fs to $dest_fs"
 
 	if ! enough_space_to_convert $resource; then
 		log "ERROR: not enough space to convert $resource" 1
@@ -381,7 +395,8 @@ convert()
 		return 1
 	fi
 	
-	if test "$dest_fs" = "rfs" && test "$resource" = "system"; then
+	if test "$resource" = system && test "$dest_fs" = "rfs"; then
+		# fat.format on Froyo is in /system
 		copy_system_in_ram
 	fi
 
@@ -403,7 +418,6 @@ convert()
 	if test "$dest_fs" = "rfs"; then
 		rfs_format $resource
 	else
-		umount /system
 
 		if test $resource = "data"; then
 			journal_size=12
@@ -413,7 +427,7 @@ convert()
 			features=''
 		fi
 		echo "wipe clean RFS partition"
-		dd if=/dev/zero of=$partition bs=1024 count=$(( 5 * 1024 ))
+		dd if=/dev/zero of=$partition bs=1024 count=$(( 3 * 1024 ))
 		mkfs.ext4 -F -O "$features"^resize_inode -J size=$journal_size -T default $partition
 		# force check the filesystem after 100 mounts or 100 days
 		tune2fs -c 100 -i 100d -m 0 $partition
@@ -434,9 +448,8 @@ convert()
 	
 	umount /voodoo/tmp/mnt/
 
-	# remount /system
-	test "$resource" = "system" && system_fs=$dest_fs
-	mount_ system
+	# conversion successful
+	return 0
 }
 
 
@@ -452,6 +465,9 @@ letsgo()
 	test -f $sdcard/Voodoo && rm $sdcard/Voodoo
 	mkdir $sdcard/Voodoo 2>/dev/null
 
+	# mount system because we will do some checks in it
+	# and maybe a few limited modifications
+	mount_ system
 	verify_voodoo_install
 
 	# if /data is an Ext4 filesystem, it means we need to activate
@@ -471,9 +487,6 @@ letsgo()
 
 	# Manage logs
 
-	# copy some logs in it to help debugging
-	mkdir $sdcard/Voodoo/logs 2>/dev/null
-
 	# clean up old logs (more than 7 days)
 	find $sdcard/Voodoo/logs/ -mtime +7 -delete
 
@@ -483,9 +496,10 @@ letsgo()
 	cat /voodoo/logs/voodoo_log.txt /voodoo/logs/voodoo.log > $sdcard/Voodoo/logs/voodoo_log.txt
 	rm /voodoo/logs/voodoo_log.txt
 
-	init_log_filename=init-"`date '+%Y-%m-%d_%H-%M-%S'`".txt
-	cp /voodoo/logs/init.log $sdcard/Voodoo/logs/$init_log_filename
-	rm $sdcard/init.log
+	cp $log_dir/* /voodoo/logs
+
+	logs_directory=boot-`date '+%Y-%m-%d_%H-%M-%S'`
+	mv $log_dir $sdcard/Voodoo/logs/$logs_directory
 	
 	# remove voices from memory
 	rm -r /voodoo/voices

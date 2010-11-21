@@ -5,6 +5,9 @@
 # partition is $7 when called by init_samsung
 
 export PATH=/system/bin:/bin:/sbin
+. /voodoo/configs/shared 2>/dev/null
+
+logname="fat.format_wrapper_log.txt"
 
 # back 2 levels
 parent_pid=`cut -d" " -f4 /proc/self/stat`
@@ -15,8 +18,8 @@ case $parent_name in
 	/init_samsung)
 		if ls /voodoo/run/ext4_enabled > /dev/null 2>&1 ; then
 			echo "Ext4 activated and fat.format called by init_samsung. nothing done" \
-				>> /voodoo/logs/fat.format_wrapper.log
-			echo "command was $0 $*" >> /voodoo/logs/fat.format_wrapper.log
+				| tee -a $log_dir/$logname >> /voodoo/logs/$logname
+			echo "command was $0 $*"  | tee -a $log_dir/$logname >> /voodoo/logs/$logname
 			exit 0
 		fi
 	;;

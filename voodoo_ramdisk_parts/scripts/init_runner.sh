@@ -12,9 +12,11 @@ create_devices.sh
 mount -t vfat -o utf8 /dev/block/mmcblk0p1 $sdcard || \
 mount -t vfat -o utf8 /dev/block/mmcblk1p1 $sdcard
 
-mkdir -p /voodoo/tmp/sdcard/Voodoo/logs
-mv $sdcard/init.log $sdcard/Voodoo/logs/init-failed-boot-log-`date '+%Y-%m-%d_%H-%M-%S'`.txt
-/voodoo/scripts/init.sh 2>&1 | tee $sdcard/init.log > /voodoo/logs/init.log
+# save the logs of a failed boot
+mv $log_dir $sdcard/Voodoo/logs/boot-`date '+%Y-%m-%d_%H-%M-%S'`-failed
+
+mkdir -p $log_dir
+/voodoo/scripts/init.sh 2>&1 | tee $log_dir/init_log.txt > /voodoo/logs/init_log.txt
 
 # umount the sdcard before running Samsung's init
 umount $sdcard

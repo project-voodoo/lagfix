@@ -5,11 +5,11 @@
 
 PATH=/bin:/sbin:/system/bin
 set -x
-
-exec | tee -a $sdcard/init.log 2>&1 >> /voodoo/logs/rfs_formatter.log 
+exec >> $log_dir/rfs_formatter_log.txt 2>&1
 
 # load partitions references
 . /voodoo/configs/partitions
+mount
 
 resource_to_format="`cat /voodoo/run/rfs_format_what`"
 echo "\nformat $resource_to_format:\n"

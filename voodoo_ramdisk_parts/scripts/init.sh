@@ -36,10 +36,10 @@ set -x
 
 PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
 
-sdcard='/voodoo/tmp/sdcard'
-
-# load partition config common to every model
+# load configs
 . /voodoo/configs/partitions
+. /voodoo/configs/shared
+
 
 # load functions
 . /voodoo/scripts/init_functions.sh
@@ -81,11 +81,10 @@ detect_all_filesystems
 # find kernel version
 configure_from_kernel_version
 
-# using what /system partition has to offer
 mount_ system
 # copy the sound configuration
 cp /system/etc/asound.conf /etc/asound.conf
-
+umount /system
 
 # we will need these directories
 mkdir /cache 2> /dev/null
@@ -166,6 +165,9 @@ if in_recovery; then
 		/voodoo/scripts/cwm_setup.sh
 		ln -s /voodoo/scripts/mount_wrapper.sh /sbin/mount
 		> /voodoo/run/cwm_enabled
+
+		# don't run conversion process if booting into CWM recovery
+		letsgo
 	else
 		# stock recovery don't handle /cache or /dbdata in Ext4
 		# give them rfs filesystems
@@ -178,6 +180,7 @@ if in_recovery; then
 	fi
 	
 	umount /cache
+
 fi
 
 if test $lagfix_enabled = 1; then
@@ -194,7 +197,6 @@ if test $lagfix_enabled = 1; then
 	mount_ cache
 	mount_ dbdata
 	mount_ data
-	mount_ system
 
 	letsgo
 else
@@ -204,7 +206,7 @@ else
 	convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs || mount_ dbdata
 	silent=0
 	convert data $data_partition $data_fs rfs && data_fs=rfs || mount_ data
-	convert system $system_partition $system_fs rfs && system_fs=rfs || mount_ system
+	convert system $system_partition $system_fs rfs && system_fs=rfs
 	
 	letsgo
 fi

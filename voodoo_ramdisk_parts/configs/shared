@@ -1,2 +1,3 @@
 # declaration of constants used in several scripts
 sdcard='/voodoo/tmp/sdcard'
+log_dir='/voodoo/tmp/sdcard/Voodoo/logs/latest'
