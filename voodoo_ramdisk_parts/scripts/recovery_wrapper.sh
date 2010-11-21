@@ -1,6 +1,9 @@
 #!/bin/sh
+. /voodoo/configs/shared
+
 export PATH=$PATH:/bin
 exec >> $sdcard/recovery_wrapper_log.txt 2>&1
+
 
 if test -f /voodoo/run/cwm_enabled; then
 	echo "starting CWM recovery"
