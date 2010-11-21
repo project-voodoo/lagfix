@@ -10,13 +10,28 @@
 # usage: generate_voodoo_ramdisk.sh stock_ramdisk voodoo_ramdisks voodoo_ramdisk_parts stages_source build_only_uncompressed
 #
 
-make_cpio() {
+make_cpio()
+{
 	echo "creating a cpio for $1"
 	cd $1 || exit "error during stage cpio file creation"
 	find | fakeroot cpio -H newc -o > ../$1.cpio
 	ls -lh ../$1.cpio
 	cd - >/dev/null
 	echo 
+}
+
+optimize_cwm_directory()
+{
+	rm -rf cwm/META_INF
+	rm -f cwm/res/sh
+	rm -f cwm/sbin/fformat
+	rm -f cwm/killrecovery.sh
+
+	rm -f cwm/sbin/e2fsck
+	ln -s /usr/sbin/e2fsck cwm/sbin/e2fsck
+
+	rm -f cwm/sbin/tune2fs
+	ln -s /usr/sbin/tune2fs cwm/sbin/tune2fs
 }
 
 
@@ -86,6 +101,8 @@ cat /tmp/init.rc | sed s/"lowmemorykiller\/parameters\/minfree 2560,4096,6144,10
 add_run_parts init.rc
 add_run_parts recovery.rc
 
+# optimize CWM directory if it's there
+optimize_cwm_directory
 
 # copy ramdisk stuff
 mkdir voodoo 2>/dev/null
