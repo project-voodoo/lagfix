@@ -22,6 +22,7 @@ make_cpio()
 
 optimize_cwm_directory()
 {
+	test -d cwm || return
 	rm -rf cwm/META_INF
 	rm -f cwm/res/sh
 	rm -f cwm/sbin/fformat
