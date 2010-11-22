@@ -42,7 +42,7 @@ mount_()
 mount_tmp()
 {
 	# used during conversions and detection
-	mount -t ext4 $1 -o barrier=0 /voodoo/tmp/mnt/ || mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
+	mount -t ext4 $1 -o barrier=0,noatime /voodoo/tmp/mnt/ || mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
 }
 
 log_time()
@@ -180,7 +180,8 @@ configure_from_kernel_version()
 log()
 {
 	indent=""
-	test "$2" = 1 && indent="    " || test "$2" = 2 && indent="        "
+	test "$2" = 1 && indent="    "
+	test "$2" = 2 && indent="        "
 	echo "`date '+%Y-%m-%d %H:%M:%S'` $indent $1" >> /voodoo/logs/voodoo_log.txt
 }
 
@@ -355,7 +356,7 @@ ext4_format()
 		journal_size=4
 		features=''
 	fi
-	log "wipe clean RFS partition"
+	log "wipe clean RFS partition" 2
 	dd if=/dev/zero of=$partition bs=1024 count=$(( 5 * 1024 ))
 	mkfs.ext4 -F -O "$features"^resize_inode -J size=$journal_size -T default $partition
 	# force check the filesystem after 100 mounts or 100 days
@@ -495,7 +496,6 @@ letsgo()
 	log "running init !"
 
 	# Manage logs
-
 	# clean up old logs on sdcard (more than 7 days)
 	find $sdcard/Voodoo/logs/ -mtime +7 -delete
 
