@@ -391,6 +391,14 @@ convert()
 	fi
 	log "convert $resource ($partition) from $fs to $dest_fs"
 
+	# be sure fat.format is in PATH
+	if "$dest_fs" = "rfs"; then
+		fat.format 2>&1
+		if "$?" = 127; then
+			log "unable to call fat.format, cancel conversion" 1
+		fi
+	fi
+
 	# make sure df is there or cancel conversion
 	if ! df; then
 		log "unable to call the df command from system, cancel conversion" 1
