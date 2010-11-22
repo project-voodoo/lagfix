@@ -40,9 +40,15 @@ optimize_cwm_directory()
 activate_recovery_wrapper()
 {
 	sed s/"service recovery .*bin\/recovery"/"service recovery \/voodoo\/scripts\/recovery_wrapper.sh"/ recovery.rc > /tmp/recovery.rc
-	#cp /tmp/recovery.rc .
 	sed s/"service console \/system\/bin\/sh"/''/ /tmp/recovery.rc | \
 		sed s/".*console$"/""/ > recovery.rc
+}
+
+
+activate_adbd_wrapper()
+{
+	sed s/"\/sbin\/adbd"/"\/voodoo\/scripts\/adbd_wrapper.sh"/ recovery.rc > /tmp/recovery.rc
+	cp /tmp/recovery.rc .
 }
 
 
@@ -109,6 +115,9 @@ mv init init_samsung
 
 # change recovery.rc to call a wrapper instead of the real recovery binary
 activate_recovery_wrapper
+
+# add a wrapper to correct the adbd start issue (also on stock)
+activate_adbd_wrapper
 
 # change memory thresholds too Voodoo optimized ones
 change_memory_management_settings
