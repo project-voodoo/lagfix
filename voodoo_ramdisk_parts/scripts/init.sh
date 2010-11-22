@@ -208,27 +208,22 @@ if test $lagfix_enabled = 1; then
 
 	if ! in_recovery; then
 		silent=1
-		convert cache $cache_partition $cache_fs ext4 && cache_fs=ext4
-		convert dbdata $dbdata_partition $dbdata_fs ext4 && dbdata_fs=ext4
+		convert cache $cache_partition $cache_fs ext4; cache_fs=$output_fs
+		convert dbdata $dbdata_partition $dbdata_fs ext4; dbdata_fs=$output_fs
 		silent=0
 	fi
-	convert data $data_partition $data_fs ext4 && data_fs=ext4
-	convert system $system_partition $system_fs ext4 && system_fs=ext4
-
-	mount_ cache
-	mount_ dbdata
-	mount_ data
-	mount_ system
+	convert data $data_partition $data_fs ext4; data_fs=$output_fs
+	convert system $system_partition $system_fs ext4; system_fs=$output_fs
 
 	letsgo
 else
 
 	silent=1
-	convert cache $cache_partition $cache_fs rfs && cache_fs=rfs || mount_ cache
-	convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs || mount_ dbdata
+	convert cache $cache_partition $cache_fs rfs; cache_fs=$output_fs
+	convert dbdata $dbdata_partition $dbdata_fs rfs; dbdata_fs=$output_fs
 	silent=0
-	convert data $data_partition $data_fs rfs && data_fs=rfs || mount_ data
-	convert system $system_partition $system_fs rfs && system_fs=rfs || mount_ system
+	convert data $data_partition $data_fs rfs; cache_fs=$data_fs
+	convert system $system_partition $system_fs rfs; cache_fs=$system_fs
 	
 	letsgo
 fi

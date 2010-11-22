@@ -385,6 +385,8 @@ convert()
 	fs="$3"
 	dest_fs="$4"
 	
+	output_fs=$fs
+
 	if test $fs = $dest_fs; then
 		log "no need to convert $resource"
 		return
@@ -392,16 +394,17 @@ convert()
 	log "convert $resource ($partition) from $fs to $dest_fs"
 
 	# be sure fat.format is in PATH
-	if "$dest_fs" = "rfs"; then
+	if test "$dest_fs" = "rfs"; then
 		fat.format 2>&1
-		if "$?" = 127; then
-			log "unable to call fat.format, cancel conversion" 1
+		if test "$?" = 127; then
+			log "ERROR: unable to call fat.format: cancel conversion" 1
+			return 1
 		fi
 	fi
 
 	# make sure df is there or cancel conversion
 	if ! df; then
-		log "unable to call the df command from system, cancel conversion" 1
+		log "ERROR: unable to call the df command from system, cancel conversion" 1
 		say "cancel-no-system"
 		return 1
 	fi
@@ -436,8 +439,10 @@ convert()
 	log "format $partition" 1
 	if test "$dest_fs" = "rfs"; then
 		rfs_format $resource
+		output_fs=rfs
 	else
 		ext4_format
+		output_fs=ext4
 	fi
 
 	log "restore $resource" 1
@@ -445,12 +450,13 @@ convert()
 
 	log_time start
 	if ! mount_tmp $partition; then
-		log "ERROR: unexpected issue, unable to mount $partition to restore the backup"
-		log "workaround adopted: formating to Ext4 again"
+		log "ERROR: unexpected issue, unable to mount $partition to restore the backup" 1
+		log "workaround adopted: formating to Ext4 again" 1
 		#  reformat to ext4 because it's not prone to bugs like RFS
 		ext4_format
+		output_fs=ext4
 		if ! mount_tmp $partition; then
-			log "ERROR: again unable to mount $partition, fat conversion error"
+			log "ERROR: again unable to mount $partition, fat conversion error" 1
 			return 1
 		fi
 	fi
@@ -476,6 +482,13 @@ convert()
 
 letsgo()
 {
+
+	# mount Ext4 partitions
+	test $cache_fs = ext4 && mount_ cache
+	test $dbdata_fs = ext4 && mount_ dbdata
+	test $data_fs = ext4 && mount_ data && > /voodoo/run/ext4_enabled
+	test $system_fs = ext4 && mount_ system
+
 	rm -rf /system_in_ram
 	
 	# remove the tarball in maximum compression mode
