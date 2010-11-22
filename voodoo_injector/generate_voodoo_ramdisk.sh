@@ -20,6 +20,7 @@ make_cpio()
 	echo 
 }
 
+
 optimize_cwm_directory()
 {
 	test -d cwm || return
@@ -33,6 +34,42 @@ optimize_cwm_directory()
 
 	rm -f cwm/sbin/tune2fs
 	ln -s /usr/sbin/tune2fs cwm/sbin/tune2fs
+}
+
+
+activate_recovery_wrapper()
+{
+	sed s/"service recovery .*bin\/recovery"/"service recovery \/voodoo\/scripts\/recovery_wrapper.sh"/ recovery.rc > /tmp/recovery.rc
+	#cp /tmp/recovery.rc .
+	sed s/"service console \/system\/bin\/sh"/''/ /tmp/recovery.rc | \
+		sed s/".*console$"/""/ > recovery.rc
+}
+
+
+add_run_parts()
+{
+	rc_file=$1
+	echo "\nservice run-parts /voodoo/scripts/run-parts.sh /system/etc/init.d" >> $rc_file
+	echo "  oneshot \n" >> $rc_file
+
+	echo "start run-parts" >> $rc_file
+}
+
+
+change_memory_management_settings()
+{
+	cat init.rc | \
+	sed s/"FOREGROUND_APP_MEM.*"/"FOREGROUND_APP_MEM 2560"/ | \
+	sed s/"VISIBLE_APP_MEM.*"/"VISIBLE_APP_MEM 4096"/ | \
+	sed s/"SECONDARY_SERVER_MEM.*"/"SECONDARY_SERVER_MEM 6144"/ | \
+	sed s/"BACKUP_APP_MEM.*"/"BACKUP_APP_MEM 6144"/ | \
+	sed s/"HOME_APP_MEM.*"/"HOME_APP_MEM 6144"/ | \
+	sed s/"HIDDEN_APP_MEM.*"/"HIDDEN_APP_MEM 12288"/ | \
+	sed s/"CONTENT_PROVIDER_MEM.*"/"CONTENT_PROVIDER_MEM 13312"/ | \
+	sed s/"EMPTY_APP_MEM.*"/"EMPTY_APP_MEM 16384"/ > /tmp/init.rc
+
+	cat /tmp/init.rc | \
+	sed s/"lowmemorykiller\/parameters\/minfree 2560,4096,6144,10240,11264,12288"/"lowmemorykiller\/parameters\/minfree 2560,4096,6144,12288,13312,16384"/ > init.rc
 }
 
 
@@ -71,34 +108,12 @@ cd $dest/uncompressed
 mv init init_samsung
 
 # change recovery.rc to call a wrapper instead of the real recovery binary
-sed s/"service recovery .*bin\/recovery"/"service recovery \/voodoo\/scripts\/recovery_wrapper.sh"/ recovery.rc > /tmp/recovery.rc
-#cp /tmp/recovery.rc .
-sed s/"service console \/system\/bin\/sh"/''/ /tmp/recovery.rc | \
-	sed s/".*console$"/""/ > recovery.rc
-
-# run-parts support
-add_run_parts()
-{
-	rc_file=$1
-	echo "\nservice run-parts /voodoo/scripts/run-parts.sh /system/etc/init.d" >> $rc_file
-	echo "  oneshot \n" >> $rc_file
-	
-	echo "start run-parts" >> $rc_file
-}
+activate_recovery_wrapper
 
 # change memory thresholds too Voodoo optimized ones
-cat init.rc | \
-sed s/"FOREGROUND_APP_MEM.*"/"FOREGROUND_APP_MEM 2560"/ | \
-sed s/"VISIBLE_APP_MEM.*"/"VISIBLE_APP_MEM 4096"/ | \
-sed s/"SECONDARY_SERVER_MEM.*"/"SECONDARY_SERVER_MEM 6144"/ | \
-sed s/"BACKUP_APP_MEM.*"/"BACKUP_APP_MEM 6144"/ | \
-sed s/"HOME_APP_MEM.*"/"HOME_APP_MEM 6144"/ | \
-sed s/"HIDDEN_APP_MEM.*"/"HIDDEN_APP_MEM 12288"/ | \
-sed s/"CONTENT_PROVIDER_MEM.*"/"CONTENT_PROVIDER_MEM 13312"/ | \
-sed s/"EMPTY_APP_MEM.*"/"EMPTY_APP_MEM 16384"/ > /tmp/init.rc
+change_memory_management_settings
 
-cat /tmp/init.rc | sed s/"lowmemorykiller\/parameters\/minfree 2560,4096,6144,10240,11264,12288"/"lowmemorykiller\/parameters\/minfree 2560,4096,6144,12288,13312,16384"/ > init.rc
-
+# run-parts support
 add_run_parts init.rc
 add_run_parts recovery.rc
 
