@@ -167,6 +167,8 @@ ln -s busybox /sbin/zcat
 
 # also shorter
 echo "#!/sbin/sh
+set -x
+exec >> /voodoo/logs/cwm_postrecoveryboot_log.txt 2>&11
 rm /etc
 mkdir -p /etc
 mkdir -p /datadata
