@@ -428,7 +428,7 @@ convert()
 		return 1
 	fi
 
-	if ! tar cvf $sdcard/voodoo_conversion.tar /voodoo/tmp/mnt/; then
+	if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "Continuing the operation anyway as the filesytem of $resource cannot be repaired" 1
 		log "Generally this error comes after an RFS filesystem has been mounted without -o check=no" 1
@@ -461,13 +461,13 @@ convert()
 		fi
 	fi
 
-	if ! tar xvf $sdcard/voodoo_conversion.tar; then
+	if ! tar xvf $sdcard/voodoo_"$resource"_conversion.tar; then
 		log "ERROR: problem during $resource restore" 1
 		umount /voodoo/tmp/mnt/
 		return 1
 	fi
 	log_time end
-	rm $sdcard/voodoo_conversion.tar
+	! test "debug_mode" != 1 && rm $sdcard/voodoo_"$resource"_conversion.tar
 
 	umount /voodoo/tmp/mnt/
 
@@ -494,11 +494,6 @@ letsgo()
 	# remove the tarball in maximum compression mode
 	rm -f compressed_voodoo_ramdisk.tar.lzma
 	
-	# dump logs to the sdcard
-	# create the Voodoo dir in sdcard if not here already
-	test -f $sdcard/Voodoo && rm $sdcard/Voodoo
-	mkdir $sdcard/Voodoo 2>/dev/null
-
 	verify_voodoo_install
 
 	# if /data is an Ext4 filesystem, it means we need to activate
