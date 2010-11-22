@@ -45,6 +45,7 @@ mount_tmp()
 	mount -t ext4 $1 -o barrier=0,noatime /voodoo/tmp/mnt/ || mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
 }
 
+
 log_time()
 {
 	test "$1" = "start" && start=`date '+%s'` && return && start_nano=`date '+%N' | cut -b1,2`
@@ -54,6 +55,7 @@ log_time()
 		log 'time spent: '$(( end - start ))'.'$(( end_nano - start_nano ))'s' 1
 	fi
 }
+
 
 load_stage()
 {
@@ -429,8 +431,19 @@ convert()
 
 	if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ > $log_dir/"$resource"_backup_list.txt; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
-		log "Continuing the operation anyway as the filesytem of $resource cannot be repaired" 1
-		log "Generally this error comes after an RFS filesystem has been mounted without -o check=no" 1
+		log "This error comes after an RFS filesystem has been mounted without the standard -o check=no" 1
+		if test $fs = rfs; then
+			log "Attempting a mount with broken RFS options" 1
+			mount -t rfs -o ro $partition /voodoo/tmp/mnt/
+			if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ \
+				> $log_dir/"$resource"_backup_list_2.txt; then
+				log "Unable to save a correct backup: cancel conversion" 2
+				umount /voodoo/tmp/mnt
+				return 1
+			else
+				log "second attempt successful"
+			fi
+		fi
 	fi
 	umount /voodoo/tmp/mnt/
 	log_time end
