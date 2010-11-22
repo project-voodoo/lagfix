@@ -42,11 +42,7 @@ mount_()
 mount_tmp()
 {
 	# used during conversions and detection
-	if test "$2" = "ext4"; then
-		mount -t ext4 $1 -o barrier=0,noatime /voodoo/tmp/mnt/
-	else
-		mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
-	fi
+	mount -t ext4 $1 -o barrier=0 /voodoo/tmp/mnt/ || mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
 }
 
 log_time()
@@ -185,7 +181,7 @@ log()
 {
 	indent=""
 	test "$2" = 1 && indent="    " || test "$2" = 2 && indent="        "
-	echo "`date '+%Y-%m-%d %H:%M:%S'` $indent $1" >> /voodoo/logs/voodoo.log
+	echo "`date '+%Y-%m-%d %H:%M:%S'` $indent $1" >> /voodoo/logs/voodoo_log.txt
 }
 
 
@@ -301,11 +297,6 @@ enough_space_to_convert()
 	log "check space for $resource:" 1
 	
 	mount_ $resource
-	# make sure df is there
-	if ! df; then
-		umount /system
-		return 1
-	fi
 
 	# read free space on internal SD
 	target_free=$((`df $sdcard | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
@@ -319,8 +310,8 @@ enough_space_to_convert()
 	# more than 100MB on /data, talk to the user
 	test $space_needed -gt 100 && say "wait"
 
-	# umount the resource
-	umount /$resource
+	# umount the resource if it's not /system
+	test "$resource" != "system" && umount /$resource
 
 	# ask for 10% more free space for security reasons
 	test $target_free -ge $(( $space_needed + $space_needed / 10))
@@ -360,7 +351,6 @@ copy_system_in_ram()
 		# save /system stuff
 		log "make a limited copy of /system in ram" 1
 		mkdir /system_in_ram
-		mount_ system
 		cp -rp /system/lib /system_in_ram
 		cp -rp /system/bin /system_in_ram
 		umount /system
@@ -373,30 +363,41 @@ convert()
 {
 	resource="$1"
 	partition="$2"
-	source_fs="$3"
+	fs="$3"
 	dest_fs="$4"
 	
-	if test $source_fs = $dest_fs; then
+	if test $fs = $dest_fs; then
 		log "no need to convert $resource"
 		return
 	fi
-	log "convert $resource ($partition) from $source_fs to $dest_fs"
+	log "convert $resource ($partition) from $fs to $dest_fs"
 
-	copy_system_in_ram
-
+	# make sure df is there or cancel conversion
+	if ! df; then
+		log "unable to call the df command from system, cancel conversion" 1
+		say "cancel-no-system"
+		return 1
+	fi
 	if ! enough_space_to_convert $resource; then
 		log "ERROR: not enough space to convert $resource" 1
 		say "cancel-no-space"
 		return 1
 	fi
 	
+	if test "$dest_fs" = "rfs" && test "$resource" = "system"; then
+		copy_system_in_ram
+	fi
 
 	log "backup $resource" 1
 	say "step1"
 
 	log_time start
 
-	mount_tmp $partition $source_fs
+	if ! mount_tmp $partition; then
+		log "ERROR: unable to mount $partition" 1
+		return 1
+	fi
+
 	if ! tar cvf $sdcard/voodoo_conversion.tar /voodoo/tmp/mnt/; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "Continuing the operation anyway as the filesytem of $resource cannot be repaired" 1
@@ -409,6 +410,7 @@ convert()
 	if test "$dest_fs" = "rfs"; then
 		rfs_format $resource
 	else
+		umount /system
 
 		if test $resource = "data"; then
 			journal_size=12
@@ -418,7 +420,7 @@ convert()
 			features=''
 		fi
 		echo "wipe clean RFS partition"
-		dd if=/dev/zero of=$partition bs=1024 count=$(( 3 * 1024 ))
+		dd if=/dev/zero of=$partition bs=1024 count=$(( 5 * 1024 ))
 		mkfs.ext4 -F -O "$features"^resize_inode -J size=$journal_size -T default $partition
 		# force check the filesystem after 100 mounts or 100 days
 		tune2fs -c 100 -i 100d -m 0 $partition
@@ -428,18 +430,26 @@ convert()
 	say "step2"
 
 	log_time start
-	mount_tmp $partition $dest_fs
+	if ! mount_tmp $partition; then
+		log "ERROR: fatal unexpected issue, unable to mount $partition to restore the backup"
+		return 1
+	fi
+
 	if ! tar xvf $sdcard/voodoo_conversion.tar; then
 		log "ERROR: problem during $resource restore" 1
 		umount /voodoo/tmp/mnt/
 		return 1
 	fi
 	log_time end
-	test "$debug_mode" != 1 && rm $sdcard/voodoo_conversion.tar
-	
+	rm $sdcard/voodoo_conversion.tar
+
 	umount /voodoo/tmp/mnt/
 
-	# conversion successful
+	# remount /system
+	test "$resource" = "system" && system_fs=$dest_fs
+	mount_ system
+
+	# conversion is successful
 	return 0
 }
 
@@ -456,9 +466,6 @@ letsgo()
 	test -f $sdcard/Voodoo && rm $sdcard/Voodoo
 	mkdir $sdcard/Voodoo 2>/dev/null
 
-	# mount system because we will do some checks in it
-	# and maybe a few limited modifications
-	mount_ system
 	verify_voodoo_install
 
 	# if /data is an Ext4 filesystem, it means we need to activate
@@ -478,19 +485,21 @@ letsgo()
 
 	# Manage logs
 
-	# clean up old logs (more than 7 days)
+	# clean up old logs on sdcard (more than 7 days)
 	find $sdcard/Voodoo/logs/ -mtime +7 -delete
 
-	# manage the voodoo log
-	tail -n 1000 $sdcard/Voodoo/logs/voodoo_log.txt > /voodoo/logs/voodoo_log.txt
-	echo >> /voodoo/logs/voodoo_log.txt
-	cat /voodoo/logs/voodoo_log.txt /voodoo/logs/voodoo.log > $sdcard/Voodoo/logs/voodoo_log.txt
-	rm /voodoo/logs/voodoo_log.txt
+	# manage the voodoo_history log
+	tail -n 1000 $sdcard/Voodoo/logs/voodoo_history_log.txt > /voodoo/logs/voodoo_history_log.txt
+	echo >> /voodoo/logs/voodoo_history_log.txt
+	cat /voodoo/logs/voodoo_history_log.txt /voodoo/logs/voodoo_log.txt > $sdcard/Voodoo/logs/voodoo_history_log.txt
+	# save current voodoo_log in the sdcard
+	cp /voodoo/logs/voodoo_log.txt $log_dir/
 
+	# manage other logs
 	cp $log_dir/* /voodoo/logs
 
-	logs_directory=boot-`date '+%Y-%m-%d_%H-%M-%S'`
-	mv $log_dir $sdcard/Voodoo/logs/$logs_directory
+	current_log_directory=boot-`date '+%Y-%m-%d_%H-%M-%S'`
+	mv $log_dir $sdcard/Voodoo/logs/$current_log_directory
 	
 	# remove voices from memory
 	rm -r /voodoo/voices

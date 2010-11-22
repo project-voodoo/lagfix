@@ -4,11 +4,12 @@
 . /voodoo/configs/shared
 
 PATH=/bin:/sbin:/system/bin
-set -x
 exec >> $log_dir/rfs_formatter_log.txt 2>&1
 
 # load partitions references
 . /voodoo/configs/partitions
+
+echo "current mounts"
 mount
 
 resource_to_format="`cat /voodoo/run/rfs_format_what`"
@@ -29,7 +30,7 @@ case $resource_to_format in
 		fat.format -v -S 4096 -s 4 -F 32 $data_partition
 	;;
 	system)
-		dd if=/dev/zero of=$system_partition bs=1024 count=$(( 1024 * 2 )); sync
+		dd if=/dev/zero of=$system_partition bs=1024 count=$(( 1024 * 4 )); sync
 		fat.format -v -S 4096 -s 1 -F 32 $system_partition
 	;;
 esac

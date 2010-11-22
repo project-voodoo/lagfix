@@ -40,7 +40,6 @@ PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
 . /voodoo/configs/partitions
 . /voodoo/configs/shared
 
-
 # load functions
 . /voodoo/scripts/init_functions.sh
 
@@ -60,7 +59,7 @@ insmod /lib/modules/fsr_stl.ko
 insmod /lib/modules/rfs_glue.ko
 insmod /lib/modules/rfs_fat.ko
 
-# insmod Ext4 modules for injected ramdisks
+# insmod Ext4 modules for injected ramdisks without Ext4 driver builtin
 test -f /lib/modules/jbd2.ko && insmod /lib/modules/jbd2.ko
 test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
 
@@ -81,10 +80,11 @@ detect_all_filesystems
 # find kernel version
 configure_from_kernel_version
 
+# mount /system so we will be able to use df, fat.format and asound.conf
 mount_ system
 # copy the sound configuration
 cp /system/etc/asound.conf /etc/asound.conf
-umount /system
+
 
 # we will need these directories
 mkdir /cache 2> /dev/null
@@ -180,7 +180,6 @@ if in_recovery; then
 	fi
 	
 	umount /cache
-
 fi
 
 if test $lagfix_enabled = 1; then
@@ -197,6 +196,7 @@ if test $lagfix_enabled = 1; then
 	mount_ cache
 	mount_ dbdata
 	mount_ data
+	mount_ system
 
 	letsgo
 else
@@ -206,7 +206,7 @@ else
 	convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs || mount_ dbdata
 	silent=0
 	convert data $data_partition $data_fs rfs && data_fs=rfs || mount_ data
-	convert system $system_partition $system_fs rfs && system_fs=rfs
+	convert system $system_partition $system_fs rfs && system_fs=rfs || mount_ system
 	
 	letsgo
 fi
