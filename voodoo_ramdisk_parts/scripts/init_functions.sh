@@ -344,6 +344,24 @@ rfs_format()
 	mv /voodoo/tmp/*.rc ./
 }
 
+ext4_format()
+{
+		umount /system
+
+		if test $resource = "data"; then
+			journal_size=12
+			features='sparse_super,'
+		else
+			journal_size=4
+			features=''
+		fi
+		log "wipe clean RFS partition"
+		dd if=/dev/zero of=$partition bs=1024 count=$(( 5 * 1024 ))
+		mkfs.ext4 -F -O "$features"^resize_inode -J size=$journal_size -T default $partition
+		# force check the filesystem after 100 mounts or 100 days
+		tune2fs -c 100 -i 100d -m 0 $partition
+}
+
 
 copy_system_in_ram()
 {
@@ -410,20 +428,7 @@ convert()
 	if test "$dest_fs" = "rfs"; then
 		rfs_format $resource
 	else
-		umount /system
-
-		if test $resource = "data"; then
-			journal_size=12
-			features='sparse_super,'
-		else
-			journal_size=4
-			features=''
-		fi
-		echo "wipe clean RFS partition"
-		dd if=/dev/zero of=$partition bs=1024 count=$(( 5 * 1024 ))
-		mkfs.ext4 -F -O "$features"^resize_inode -J size=$journal_size -T default $partition
-		# force check the filesystem after 100 mounts or 100 days
-		tune2fs -c 100 -i 100d -m 0 $partition
+		ext4_format
 	fi
 
 	log "restore $resource" 1
@@ -431,8 +436,14 @@ convert()
 
 	log_time start
 	if ! mount_tmp $partition; then
-		log "ERROR: fatal unexpected issue, unable to mount $partition to restore the backup"
-		return 1
+		log "ERROR: unexpected issue, unable to mount $partition to restore the backup"
+		log "workaround adopted: formating to Ext4 again"
+		#  reformat to ext4 because it's not prone to bugs like RFS
+		ext4_format
+		if ! mount_tmp $partition; then
+			log "ERROR: again unable to mount $partition, fat conversion error"
+			return 1
+		fi
 	fi
 
 	if ! tar xvf $sdcard/voodoo_conversion.tar; then
