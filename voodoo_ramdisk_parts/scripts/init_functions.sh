@@ -320,7 +320,7 @@ enough_space_to_convert()
 
 rfs_format()
 {
-	log "format $1 as RFS" 1
+	log "format $1 as RFS using Android init + a fake init.rc to run fat.format" 1
 	# communicate with the formatter script
 	echo "$1" > /voodoo/run/rfs_format_what
 	
@@ -346,20 +346,20 @@ rfs_format()
 
 ext4_format()
 {
-		umount /system
+	umount /system
 
-		if test $resource = "data"; then
-			journal_size=12
-			features='sparse_super,'
-		else
-			journal_size=4
-			features=''
-		fi
-		log "wipe clean RFS partition"
-		dd if=/dev/zero of=$partition bs=1024 count=$(( 5 * 1024 ))
-		mkfs.ext4 -F -O "$features"^resize_inode -J size=$journal_size -T default $partition
-		# force check the filesystem after 100 mounts or 100 days
-		tune2fs -c 100 -i 100d -m 0 $partition
+	if test $resource = "data"; then
+		journal_size=12
+		features='sparse_super,'
+	else
+		journal_size=4
+		features=''
+	fi
+	log "wipe clean RFS partition"
+	dd if=/dev/zero of=$partition bs=1024 count=$(( 5 * 1024 ))
+	mkfs.ext4 -F -O "$features"^resize_inode -J size=$journal_size -T default $partition
+	# force check the filesystem after 100 mounts or 100 days
+	tune2fs -c 100 -i 100d -m 0 $partition
 }
 
 
