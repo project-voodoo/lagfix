@@ -18,8 +18,8 @@ case $parent_name in
 	/init_samsung)
 		if ls /voodoo/run/ext4_enabled > /dev/null 2>&1 ; then
 			echo "Ext4 activated and fat.format called by init_samsung. nothing done" \
-				| tee -a $log_dir/$logname >> /voodoo/logs/$logname
-			echo "command was $0 $*"  | tee -a $log_dir/$logname >> /voodoo/logs/$logname
+				>> /voodoo/logs/$logname
+			echo "command was $0 $*" >> /voodoo/logs/$logname
 			exit 0
 		fi
 	;;
