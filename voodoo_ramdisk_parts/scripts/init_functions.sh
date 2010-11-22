@@ -356,8 +356,6 @@ ext4_format()
 		journal_size=4
 		features=''
 	fi
-	log "wipe clean RFS partition" 2
-	dd if=/dev/zero of=$partition bs=1024 count=$(( 5 * 1024 ))
 	mkfs.ext4 -F -O "$features"^resize_inode -J size=$journal_size -T default $partition
 	# force check the filesystem after 100 mounts or 100 days
 	tune2fs -c 100 -i 100d -m 0 $partition
