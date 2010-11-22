@@ -53,18 +53,22 @@ debug_mode=1
 mount -t proc proc /proc
 mount -t sysfs sys /sys
 
+
 # insmod required modules
 insmod /lib/modules/fsr.ko
 insmod /lib/modules/fsr_stl.ko
 insmod /lib/modules/rfs_glue.ko
 insmod /lib/modules/rfs_fat.ko
 
+
 # insmod Ext4 modules for injected ramdisks without Ext4 driver builtin
 test -f /lib/modules/jbd2.ko && insmod /lib/modules/jbd2.ko
 test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
 
+
 # create the voodoo etc symlink, required for e2fsprogs, alsa..
 ln -s /voodoo/root/etc etc
+
 
 # detect the model using the system build.prop
 if ! detect_supported_model_and_setup_partitions; then
@@ -74,16 +78,30 @@ if ! detect_supported_model_and_setup_partitions; then
 	letsgo
 fi
 
+
 # find what we got
 detect_all_filesystems
 
+
 # find kernel version
 configure_from_kernel_version
+
 
 # mount /system so we will be able to use df, fat.format and asound.conf
 mount_ system
 # copy the sound configuration
 cp /system/etc/asound.conf /etc/asound.conf
+
+
+# as we depend heavily from the sdcard, be sure its filesystem
+# is consistent or repair it
+mount -o remount,ro $sdcard
+if test $model != "fascinate";then 
+	fsck_msdos -y /dev/block/mmcblk0p1
+else
+	fsck_msdos -y /dev/block/mmcblk1p1
+fi
+mount -o remount,rw $sdcard
 
 
 # we will need these directories
@@ -94,6 +112,7 @@ mkdir /data 2> /dev/null
 
 # unpack myself : STAGE 2
 load_stage 2
+
 
 # debug mode detection
 if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test "$debug_mode" = 1 ; then
@@ -113,6 +132,8 @@ if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test "$debug_mo
 	debug_mode=1
 fi
 
+
+# read if the lagfix is enabled or not
 if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 	lagfix_enabled=0
 	log "lagfix disabled"
@@ -181,6 +202,7 @@ if in_recovery; then
 	
 	umount /cache
 fi
+
 
 if test $lagfix_enabled = 1; then
 
