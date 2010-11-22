@@ -48,12 +48,6 @@ debug_mode=1
 
 
 # STAGE 1
-
-# proc and sys are  used 
-mount -t proc proc /proc
-mount -t sysfs sys /sys
-
-
 # insmod required modules
 insmod /lib/modules/fsr.ko
 insmod /lib/modules/fsr_stl.ko
