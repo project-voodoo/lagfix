@@ -32,7 +32,7 @@ mount_()
 				e2fsck -p $system_partition
 				mount -t ext4 -o noatime,barrier=0$ext4_options $system_partition /system
 			else
-				mount -t rfs -o rw,check=no $system_partition /system
+				mount -t rfs -o check=no $system_partition /system
 			fi
 		;;
 	esac
@@ -47,10 +47,11 @@ mount_tmp()
 
 log_time()
 {
-	test "$1" = "start" && start=`date '+%s'` && return
+	test "$1" = "start" && start=`date '+%s'` && return && start_nano=`date '+%N' | cut -b1,2`
 	if test "$1" = "end"; then
 		end=`date '+%s'`
-		log 'time spent: '$(( end - start))'s' 1
+		end_nano=`date '+%N' | cut -b1,2`
+		log 'time spent: '$(( end - start ))'.'$(( end_nano - start_nano ))'s' 1
 	fi
 }
 
@@ -480,7 +481,6 @@ convert()
 
 letsgo()
 {
-
 	# mount Ext4 partitions
 	test $cache_fs = ext4 && mount_ cache
 	test $dbdata_fs = ext4 && mount_ dbdata
@@ -488,10 +488,10 @@ letsgo()
 	test $system_fs = ext4 && mount_ system
 
 	rm -rf /system_in_ram
-	
+
 	# remove the tarball in maximum compression mode
 	rm -f compressed_voodoo_ramdisk.tar.lzma
-	
+
 	verify_voodoo_install
 
 	# if /data is an Ext4 filesystem, it means we need to activate
