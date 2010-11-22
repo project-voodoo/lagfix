@@ -1,9 +1,10 @@
 #!/bin/sh
+# mostly replicate updater-script behavior from CWM as update.zip
 set -x
 export PATH=$PATH:/bin
 
+. /voodoo/configs/shared
 exec > $log_dir/cwm_start_log.txt 2>&1
-# mostly replicate updater-script behavior from CWM as update.zip
 
 # froyo make /sdcard a symlink to /mnt/sdcard, which confuses CWM
 rm /sdcard
@@ -172,7 +173,6 @@ mkdir -p /etc
 mkdir -p /datadata
 chmod 4777 /sbin/su
 umount /efs
-
 " > /sbin/postrecoveryboot.sh
 
 cat  /sbin/postrecoveryboot.sh
