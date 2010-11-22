@@ -426,7 +426,7 @@ convert()
 		return 1
 	fi
 
-	if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/; then
+	if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ > $log_dir/"$resource"_backup_list.txt; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "Continuing the operation anyway as the filesytem of $resource cannot be repaired" 1
 		log "Generally this error comes after an RFS filesystem has been mounted without -o check=no" 1
@@ -459,7 +459,7 @@ convert()
 		fi
 	fi
 
-	if ! tar xvf $sdcard/voodoo_"$resource"_conversion.tar; then
+	if ! tar xvf $sdcard/voodoo_"$resource"_conversion.tar > $log_dir/"$resource"_restore_list.txt; then
 		log "ERROR: problem during $resource restore" 1
 		umount /voodoo/tmp/mnt/
 		return 1
