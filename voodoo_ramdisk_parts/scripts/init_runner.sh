@@ -1,5 +1,6 @@
 #!/bin/sh
-# logger for Voodoo init script
+# logger / runner for Voodoo init script
+exec > /voodoo/logs/init_runner_log.txt 2>&1
 
 PATH=/bin:/sbin:/voodoo/scripts
 . /voodoo/configs/shared
