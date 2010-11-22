@@ -9,7 +9,7 @@ exec >> $log_dir/rfs_formatter_log.txt 2>&1
 # load partitions references
 . /voodoo/configs/partitions
 
-echo "current mounts"
+echo "current mounts:\n"
 mount
 
 resource_to_format="`cat /voodoo/run/rfs_format_what`"
