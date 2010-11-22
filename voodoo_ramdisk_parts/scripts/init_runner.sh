@@ -2,7 +2,6 @@
 # logger for Voodoo init script
 
 PATH=/bin:/sbin:/voodoo/scripts
-
 . /voodoo/configs/shared
 
 # create used devices nodes
@@ -12,8 +11,8 @@ create_devices.sh
 mount -t vfat -o utf8 /dev/block/mmcblk0p1 $sdcard || \
 mount -t vfat -o utf8 /dev/block/mmcblk1p1 $sdcard
 
-# save the logs of a failed boot
-mv $log_dir $sdcard/Voodoo/logs/boot-`date '+%Y-%m-%d_%H-%M-%S'`-failed
+# save the logs written during unfinished boots
+mv $log_dir $sdcard/Voodoo/logs/boot-`date '+%Y-%m-%d_%H-%M-%S'`-error
 
 mkdir -p $log_dir
 /voodoo/scripts/init.sh 2>&1 | tee $log_dir/init_log.txt > /voodoo/logs/init_log.txt
