@@ -3,8 +3,7 @@
 set -x
 export PATH=$PATH:/bin
 
-. /voodoo/configs/shared
-exec > $log_dir/cwm_start_log.txt 2>&1
+exec > /voodoo/logs/cwm_start_log.txt 2>&1
 
 # froyo make /sdcard a symlink to /mnt/sdcard, which confuses CWM
 rm /sdcard
