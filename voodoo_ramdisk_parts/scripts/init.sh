@@ -44,7 +44,7 @@ PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
 . /voodoo/scripts/init_functions.sh
 
 # enable this for development
-debug_mode=1
+# debug_mode=1
 
 
 # STAGE 1
