@@ -472,7 +472,7 @@ convert()
 	umount /voodoo/tmp/mnt/
 
 	# remount /system
-	test "$resource" = "system" && system_fs=$dest_fs
+	test "$resource" = "system" && system_fs=$output_fs
 	mount_ system
 
 	# conversion is successful
