@@ -193,6 +193,7 @@ if in_recovery; then
 		# stock recovery don't handle /cache or /dbdata in Ext4
 		# give them rfs filesystems
 
+		rm -rf /cwm
 		log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
 		silent=1
 		convert cache $cache_partition $cache_fs rfs &&	cache_fs=rfs
@@ -201,7 +202,10 @@ if in_recovery; then
 	fi
 	
 	umount /cache
+else
+	rm -rf /cwm
 fi
+
 
 
 if test $lagfix_enabled = 1; then
