@@ -13,6 +13,7 @@ mknod /dev/block/mmcblk0p2 b 179 2
 mknod /dev/block/mmcblk0p3 b 179 3
 mknod /dev/block/mmcblk0p4 b 179 4
 mknod /dev/block/mmcblk1 b 179 8
+mknod /dev/block/mmcblk1p1 b 179 9
 mknod /dev/block/stl1 b 138 1
 mknod /dev/block/stl2 b 138 2
 mknod /dev/block/stl3 b 138 3
