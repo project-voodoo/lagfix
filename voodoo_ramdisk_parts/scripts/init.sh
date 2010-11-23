@@ -217,8 +217,8 @@ else
 	convert cache $cache_partition $cache_fs rfs; cache_fs=$output_fs
 	convert dbdata $dbdata_partition $dbdata_fs rfs; dbdata_fs=$output_fs
 	silent=0
-	convert data $data_partition $data_fs rfs; cache_fs=$data_fs
-	convert system $system_partition $system_fs rfs; cache_fs=$system_fs
+	convert data $data_partition $data_fs rfs; data_fs=$output_fs
+	convert system $system_partition $system_fs rfs; system_fs=$output_fs
 	
 	letsgo
 fi
