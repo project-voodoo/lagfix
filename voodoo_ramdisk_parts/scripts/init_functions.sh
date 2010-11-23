@@ -52,7 +52,7 @@ log_time()
 	if test "$1" = "end"; then
 		end=`date '+%s'`
 		end_nano=`date '+%N' | cut -b1,2`
-		log 'time spent: '$(( end - start ))'.'$(( end_nano - start_nano ))'s' 1
+		log 'time spent: '$(( end - start ))'.'$(( $end_nano - $start_nano ))'s' 1
 	fi
 }
 
