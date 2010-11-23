@@ -48,12 +48,15 @@ mount_tmp()
 
 log_time()
 {
-	test "$1" = "start" && start=`date '+%s'` && return && start_nano=`date '+%N' | cut -b1,2`
-	if test "$1" = "end"; then
-		end=`date '+%s'`
-		end_nano=`date '+%N' | cut -b1,2`
-		log 'time spent: '$(( $end - $start ))'.'$(( $end_nano - $start_nano ))'s' 1
-	fi
+	case $1 in
+		start)
+			start=`date '+%s'`
+		;;
+		end)
+			end=`date '+%s'`
+			log 'time spent: '$(( $end - $start ))'s' 1
+		;;
+	esac
 }
 
 
