@@ -306,7 +306,8 @@ enough_space_to_convert()
 	resource=$1
 	log "check space for $resource:" 1
 	
-	mount_ $resource
+	# mount resource to check for space, except if it's system (already mounted)
+	test $resource != system && mount_ $resource
 
 	# read free space on internal SD
 	target_free=$((`df $sdcard | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
@@ -357,8 +358,6 @@ rfs_format()
 
 ext4_format()
 {
-	umount /system
-
 	if test $resource = "data"; then
 		journal_size=12
 		features='sparse_super,'
@@ -413,7 +412,7 @@ convert()
 
 	# be sure fat.format is in PATH
 	if test "$dest_fs" = "rfs"; then
-		fat.format 2>&1
+		fat.format /dev/null 2>&1
 		if test "$?" = 127; then
 			log "ERROR: unable to call fat.format: cancel conversion" 1
 			return 1
@@ -421,7 +420,7 @@ convert()
 	fi
 
 	# make sure df is there or cancel conversion
-	if ! df; then
+	if ! df > /dev/null 2>&1 ; then
 		log "ERROR: unable to call the df command from system, cancel conversion" 1
 		say "cancel-no-system"
 		return 1
@@ -434,6 +433,8 @@ convert()
 	
 	if test "$dest_fs" = "rfs" && test "$resource" = "system"; then
 		copy_system_in_ram
+		# /system has been unmounted
+		remount_system=1
 	fi
 
 	log "backup $resource" 1
@@ -471,6 +472,7 @@ convert()
 		rfs_format $resource
 		output_fs=rfs
 	else
+		test $resource = system && umount /system && remount_system=1
 		ext4_format
 		output_fs=ext4
 	fi
@@ -480,8 +482,6 @@ convert()
 
 	log_time start
 
-	# free memory
-	rm -rf /system_in_ram
 
 	if ! mount_tmp $partition; then
 		log "ERROR: unexpected issue, unable to mount $partition to restore the backup" 1
@@ -506,9 +506,9 @@ convert()
 
 	umount /voodoo/tmp/mnt/
 
-	# remount /system
-	test "$resource" = "system" && system_fs=$output_fs
-	mount_ system
+	# remount /system if needed
+	test $resource = system && system_fs=$output_fs
+	test "$remount_system" = 1 && mount_ system
 
 	# conversion is successful
 	return 0
@@ -521,8 +521,8 @@ letsgo()
 	test $cache_fs = ext4 && mount_ cache
 	test $dbdata_fs = ext4 && mount_ dbdata
 	test $data_fs = ext4 && mount_ data && > /voodoo/run/ext4_enabled
-	test $system_fs = ext4 && mount_ system
 
+	# free memory
 	rm -rf /system_in_ram
 
 	# remove the tarball in maximum compression mode
