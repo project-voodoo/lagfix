@@ -54,7 +54,7 @@ log_time()
 		;;
 		end)
 			end=`date '+%s'`
-			log 'time spent: '$(( $end - $start ))'s' 1
+			log 'time spent: '$(( $end - $start )) 's' 1
 		;;
 	esac
 }
@@ -265,6 +265,7 @@ in_recovery()
 	test "`cut -d' ' -f 1 /proc/cmdline`" = "bootmode=2"
 }
 
+
 detect_cwm_recovery()
 {
 	if  test -f /cache/update.zip && test "$recovery_command" = "--update_package=CACHE:update.zip"; then
@@ -353,6 +354,7 @@ rfs_format()
 	mv /voodoo/tmp/*.rc ./
 }
 
+
 ext4_format()
 {
 	umount /system
@@ -434,7 +436,8 @@ convert()
 		return 1
 	fi
 
-	if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ > $log_dir/"$resource"_backup_list.txt; then
+	if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ \
+			> $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "This error comes after an RFS filesystem has been mounted without the standard -o check=no" 1
 		if test $fs = rfs; then
@@ -482,13 +485,14 @@ convert()
 		fi
 	fi
 
-	if ! tar xvf $sdcard/voodoo_"$resource"_conversion.tar > $log_dir/"$resource"_restore_list.txt; then
+	if ! tar xvf $sdcard/voodoo_"$resource"_conversion.tar \
+			> $log_dir/"$resource"_to_"$dest_fs"_restore_list.txt; then
 		log "ERROR: problem during $resource restore" 1
 		umount /voodoo/tmp/mnt/
 		return 1
 	fi
 	log_time end
-	! test "debug_mode" != 1 && rm $sdcard/voodoo_"$resource"_conversion.tar
+	test "debug_mode" != 1 && rm $sdcard/voodoo_"$resource"_conversion.tar
 
 	umount /voodoo/tmp/mnt/
 
