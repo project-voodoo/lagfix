@@ -377,9 +377,19 @@ copy_system_in_ram()
 	if ! test -d /system_in_ram; then
 		# save /system stuff
 		log "make a limited copy of /system in ram" 1
-		mkdir /system_in_ram
-		cp -rp /system/lib /system_in_ram
-		cp -rp /system/bin /system_in_ram
+		mkdir -p /system_in_ram/bin
+		cp	/system/bin/toolbox \
+			/system/bin/sh \
+			/system/bin/log \
+			/system/bin/linker \
+			/system/bin/fat.format*  /system_in_ram/bin/
+
+		mkdir -p /system_in_ram/lib/
+		cp 	/system/lib/liblog.so \
+			/system/lib/libc.so \
+			/system/lib/libstdc++.so \
+			/system/lib/libm.so \
+			/system/lib/libcutils.so /system_in_ram/lib/
 		umount /system
 		ln -s /system_in_ram/* /system
 	fi
