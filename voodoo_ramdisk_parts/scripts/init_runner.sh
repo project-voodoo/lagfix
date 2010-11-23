@@ -26,10 +26,12 @@ fi
 mv $log_dir $sdcard/Voodoo/logs/boot-`date '+%Y-%m-%d_%H-%M-%S'`-error 2>/dev/null
 
 mkdir -p $log_dir
+echo "Running Voodoo init:"
 /voodoo/scripts/init.sh 2>&1 | tee $log_dir/init_log.txt > /voodoo/logs/init_log.txt
 
 # umount the sdcard before running Samsung's init
 umount $sdcard
 
 # finally run Samsung's android init binary
+echo "Running Samsung's Android init:"
 exec /init_samsung

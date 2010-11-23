@@ -89,20 +89,21 @@ cp /system/etc/asound.conf /etc/asound.conf
 
 # as we depend heavily from the sdcard, be sure its filesystem
 # is consistent or repair it
-mount -o remount,ro $sdcard
+# write as little as possible in the log during the fsck
+set +x
+sync
 if test $model != "fascinate";then 
-	fsck_msdos -y /dev/block/mmcblk0p1
+	fsck_msdos -y /dev/block/mmcblk0p1 > /voodoo/logs/sdcard_fsck_log.txt
 else
-	fsck_msdos -y /dev/block/mmcblk1p1
+	fsck_msdos -y /dev/block/mmcblk1p1 > /voodoo/logs/sdcard_fsck_log.txt
 fi
-mount -o remount,rw $sdcard
+set -x
 
 
 # we will need these directories
 mkdir /cache 2> /dev/null
 mkdir /dbdata 2> /dev/null 
 mkdir /data 2> /dev/null 
-
 
 # unpack myself : STAGE 2
 load_stage 2
