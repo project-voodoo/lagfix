@@ -82,6 +82,7 @@ configure_from_kernel_version
 
 
 # mount /system so we will be able to use df, fat.format and asound.conf
+system_rfs_options='-o rw'
 mount_ system
 # copy the sound configuration
 cp /system/etc/asound.conf /etc/asound.conf
@@ -121,16 +122,6 @@ if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test "$debug_mo
 	rm default.prop-stock
 
 	debug_mode=1
-fi
-
-
-# read if the lagfix is enabled or not
-if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
-	lagfix_enabled=0
-	log "lagfix disabled"
-else
-	log "lagfix enabled"
-	lagfix_enabled=1
 fi
 
 
@@ -197,28 +188,11 @@ else
 	rm -rf /cwm
 fi
 
+# the RFS filesystem will be mounted without check=no
+convert system $system_partition $system_fs ext4; system_fs=$output_fs
 
-
-if test $lagfix_enabled = 1; then
-
-	if ! in_recovery; then
-		silent=1
-		convert cache $cache_partition $cache_fs ext4; cache_fs=$output_fs
-		convert dbdata $dbdata_partition $dbdata_fs ext4; dbdata_fs=$output_fs
-		silent=0
-	fi
-	convert data $data_partition $data_fs ext4; data_fs=$output_fs
-	convert system $system_partition $system_fs ext4; system_fs=$output_fs
-
-	letsgo
-else
-
-	silent=1
-	convert cache $cache_partition $cache_fs rfs; cache_fs=$output_fs
-	convert dbdata $dbdata_partition $dbdata_fs rfs; dbdata_fs=$output_fs
-	silent=0
-	convert data $data_partition $data_fs rfs; cache_fs=$data_fs
-	convert system $system_partition $system_fs rfs; cache_fs=$system_fs
+system_rfs_options='-o check=no'
+# Now the RFS filesystem will be mounted with check=no after being formatted
+convert system $system_partition $system_fs rfs; system_fs=$output_fs
 	
-	letsgo
-fi
+letsgo

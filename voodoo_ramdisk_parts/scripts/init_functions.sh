@@ -32,7 +32,7 @@ mount_()
 				e2fsck -p $system_partition
 				mount -t ext4 -o noatime,barrier=0$ext4_options $system_partition /system
 			else
-				mount -t rfs -o check=no $system_partition /system
+				mount -t rfs $system_rfs_options $system_partition /system
 			fi
 		;;
 	esac
@@ -42,7 +42,7 @@ mount_()
 mount_tmp()
 {
 	# used during conversions and detection
-	mount -t ext4 $1 -o barrier=0,noatime /voodoo/tmp/mnt/ || mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
+	mount -t ext4 $1 -o barrier=0,noatime /voodoo/tmp/mnt/ || mount -t rfs $system_rfs_options $1 /voodoo/tmp/mnt/
 }
 
 
@@ -431,21 +431,10 @@ convert()
 		return 1
 	fi
 
-	if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ > $log_dir/"$resource"_backup_list.txt; then
+	if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ > $log_dir/"$resource"_backup_list_to_$dest_fs.txt; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "This error comes after an RFS filesystem has been mounted without the standard -o check=no" 1
-		if test $fs = rfs; then
-			log "Attempting a mount with broken RFS options" 1
-			mount -t rfs -o ro $partition /voodoo/tmp/mnt/
-			if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ \
-				> $log_dir/"$resource"_backup_list_2.txt; then
-				log "Unable to save a correct backup: cancel conversion" 2
-				umount /voodoo/tmp/mnt
-				return 1
-			else
-				log "second attempt successful"
-			fi
-		fi
+		log "Continuing with the repair process" 1
 	fi
 	umount /voodoo/tmp/mnt/
 	log_time end
@@ -462,6 +451,8 @@ convert()
 	log "restore $resource" 1
 	say "step2"
 
+	rm -rf /system_in_ram
+	
 	log_time start
 	if ! mount_tmp $partition; then
 		log "ERROR: unexpected issue, unable to mount $partition to restore the backup" 1
@@ -475,7 +466,7 @@ convert()
 		fi
 	fi
 
-	if ! tar xvf $sdcard/voodoo_"$resource"_conversion.tar > $log_dir/"$resource"_restore_list.txt; then
+	if ! tar xvf $sdcard/voodoo_"$resource"_conversion.tar > $log_dir/"$resource"_restore_list_to_$dest_fs.txt; then
 		log "ERROR: problem during $resource restore" 1
 		umount /voodoo/tmp/mnt/
 		return 1
