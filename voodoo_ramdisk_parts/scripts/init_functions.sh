@@ -463,6 +463,10 @@ convert()
 	say "step2"
 
 	log_time start
+
+	# free memory
+	rm -rf /system_in_ram
+
 	if ! mount_tmp $partition; then
 		log "ERROR: unexpected issue, unable to mount $partition to restore the backup" 1
 		log "workaround adopted: formating to Ext4 again" 1
