@@ -482,6 +482,8 @@ convert()
 
 	log_time start
 
+	# free ram as soon as possible to avoid hitting a terrible RFS bug (supposed)
+	rm -rf /system_in_ram
 
 	if ! mount_tmp $partition; then
 		log "ERROR: unexpected issue, unable to mount $partition to restore the backup" 1
@@ -521,9 +523,6 @@ letsgo()
 	test $cache_fs = ext4 && mount_ cache
 	test $dbdata_fs = ext4 && mount_ dbdata
 	test $data_fs = ext4 && mount_ data && > /voodoo/run/ext4_enabled
-
-	# free memory
-	rm -rf /system_in_ram
 
 	# remove the tarball in maximum compression mode
 	rm -f compressed_voodoo_ramdisk.tar.lzma
