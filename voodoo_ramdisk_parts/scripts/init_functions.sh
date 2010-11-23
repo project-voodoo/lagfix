@@ -390,10 +390,6 @@ convert()
 	
 	output_fs=$fs
 
-	if test $fs = $dest_fs; then
-		log "no need to convert $resource"
-		return
-	fi
 	log "convert $resource ($partition) from $fs to $dest_fs"
 
 	# be sure fat.format is in PATH
@@ -450,6 +446,10 @@ convert()
 
 	log "restore $resource" 1
 	say "step2"
+
+	# special for /system RFS fixer, now adopt proper mount options	
+	system_rfs_options='-o check=no'
+
 
 	rm -rf /system_in_ram
 	

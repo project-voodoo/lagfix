@@ -188,10 +188,6 @@ else
 	rm -rf /cwm
 fi
 
-# the RFS filesystem will be mounted without check=no
-convert system $system_partition $system_fs ext4; system_fs=$output_fs
-
-system_rfs_options='-o check=no'
 # Now the RFS filesystem will be mounted with check=no after being formatted
 convert system $system_partition $system_fs rfs; system_fs=$output_fs
 	
