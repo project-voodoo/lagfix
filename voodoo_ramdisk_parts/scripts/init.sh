@@ -87,15 +87,6 @@ mount_ system
 cp /system/etc/asound.conf /etc/asound.conf
 
 
-# as we depend heavily from the sdcard, be sure its filesystem
-# is consistent or repair it
-# write as little as possible in the log during the fsck
-set +x
-sync
-fsck_msdos -y $sdcard_device > /voodoo/logs/sdcard_fsck_log.txt 2>&1
-set -x
-
-
 # we will need these directories
 mkdir /cache 2> /dev/null
 mkdir /dbdata 2> /dev/null 
