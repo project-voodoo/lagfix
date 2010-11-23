@@ -124,11 +124,13 @@ detect_supported_model_and_setup_partitions()
 		log "model detected: $model"
 		
 		# fascinate is different here
-		if test "$model" = "fascinate"; then
-			data_partition="/dev/block/mmcblk0p1"
+		if test "$model" = 'fascinate'; then
+			data_partition='/dev/block/mmcblk0p1'
+			sdcard_device='/dev/block/mmcblk1p1'
 		else
 		# for every other model
-			data_partition="/dev/block/mmcblk0p2"
+			data_partition='/dev/block/mmcblk0p2'
+			sdcard_device='/dev/block/mmcblk0p1'
 		fi
 		echo "data_partition='$data_partition'" >> /voodoo/configs/partitions
 

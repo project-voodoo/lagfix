@@ -92,11 +92,7 @@ cp /system/etc/asound.conf /etc/asound.conf
 # write as little as possible in the log during the fsck
 set +x
 sync
-if test $model != "fascinate";then 
-	fsck_msdos -y /dev/block/mmcblk0p1 > /voodoo/logs/sdcard_fsck_log.txt
-else
-	fsck_msdos -y /dev/block/mmcblk1p1 > /voodoo/logs/sdcard_fsck_log.txt
-fi
+fsck_msdos -y $sdcard_device > /voodoo/logs/sdcard_fsck_log.txt 2>&1
 set -x
 
 
