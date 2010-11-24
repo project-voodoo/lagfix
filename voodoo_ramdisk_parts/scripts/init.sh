@@ -118,10 +118,19 @@ fi
 # read if the lagfix is enabled or not
 if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 	lagfix_enabled=0
-	log "lagfix disabled"
+	log "option: lagfix disabled"
 else
-	log "lagfix enabled"
 	lagfix_enabled=1
+	log "option: lagfix enabled"
+fi
+
+
+if test "`find $sdcard/Voodoo/ -iname 'dont*convert*system'`" != "" ; then
+	system_conversion_enabled=0
+	log "option: don't convert /system"
+else
+	system_conversion_enabled=1
+	log "option: /system conversion is allowed"
 fi
 
 
@@ -199,7 +208,8 @@ if test $lagfix_enabled = 1; then
 		silent=0
 	fi
 	convert data $data_partition $data_fs ext4; data_fs=$output_fs
-	convert system $system_partition $system_fs ext4; system_fs=$output_fs
+	test system_conversion_enabled = 1 && \
+		convert system $system_partition $system_fs ext4; system_fs=$output_fs
 
 	letsgo
 else
@@ -209,7 +219,8 @@ else
 	convert dbdata $dbdata_partition $dbdata_fs rfs; dbdata_fs=$output_fs
 	silent=0
 	convert data $data_partition $data_fs rfs; data_fs=$output_fs
-	convert system $system_partition $system_fs rfs; system_fs=$output_fs
+	test system_conversion_enabled = 1 && \
+		system $system_partition $system_fs rfs; system_fs=$output_fs
 	
 	letsgo
 fi
