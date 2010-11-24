@@ -537,10 +537,12 @@ letsgo()
 	# actually they are sourced so they can use the init functions,
 	# resources and variables
 	
-	for x in /voodoo/extensions/*.sh; do
-		log "running extension: `echo $x | cut -d'/' -f 4`"
-		. "$x"
-	done
+	if test -f /voodoo/extensions/*.sh; then
+		for x in /voodoo/extensions/*.sh; do
+			log "running extension: `echo $x | cut -d'/' -f 4`"
+			. "$x"
+		done
+	fi
 
 	log "running init !"
 
