@@ -522,7 +522,7 @@ letsgo()
 	# mount Ext4 partitions
 	test $cache_fs = ext4 && mount_ cache
 	test $dbdata_fs = ext4 && mount_ dbdata
-	test $data_fs = ext4 && mount_ data && > /voodoo/run/ext4_enabled
+	test $data_fs = ext4 && mount_ data && > /voodoo/run/lagfix_enabled
 
 	# remove the tarball in maximum compression mode
 	rm -f compressed_voodoo_ramdisk.tar.lzma
@@ -531,7 +531,7 @@ letsgo()
 
 	# if /data is an Ext4 filesystem, it means we need to activate
 	# the fat.format wrapper protection
-	test "$data_fs" = "ext4" && > /voodoo/run/ext4_enabled
+	test "$data_fs" = "ext4" && > /voodoo/run/lagfix_enabled
 	
 	# run additionnal extensions scripts
 	# actually they are sourced so they can use the init functions,

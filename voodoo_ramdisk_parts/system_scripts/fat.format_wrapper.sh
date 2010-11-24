@@ -16,7 +16,7 @@ parent_name=`cat /proc/$parent_pid/cmdline`
 
 case $parent_name in
 	/init_samsung)
-		if ls /voodoo/run/ext4_enabled > /dev/null 2>&1 ; then
+		if ls /voodoo/run/lagfix_enabled > /dev/null 2>&1 ; then
 			echo "Ext4 activated and fat.format called by init_samsung. nothing done" \
 				>> /voodoo/logs/$logname
 			echo "command was $0 $*" >> /voodoo/logs/$logname
