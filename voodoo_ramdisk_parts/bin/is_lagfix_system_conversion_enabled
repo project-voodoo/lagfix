@@ -1,0 +1,8 @@
+#!/bin/sh
+if test "`find /sdcard/Voodoo/ -iname 'don*t*convert*system*'`" = ""; then
+	echo "yes conversion of /system is allowed"
+	> /voodoo/run/lagfix_system_conversion_enabled
+else
+	echo "no conversion of /system is disallowed"
+	rm -f /voodoo/run/lagfix_system_conversion_enabled
+fi

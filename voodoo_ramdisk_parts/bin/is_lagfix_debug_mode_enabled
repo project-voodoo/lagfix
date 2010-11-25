@@ -1,0 +1,8 @@
+#!/bin/sh
+if test "`find /sdcard/Voodoo/ -iname 'enable*debug*'`" != ""; then
+	echo "yes debug mode config is enabled"
+	> /voodoo/run/lagfix_debug_enabled
+else
+	echo "no debug mode config is disabled"
+	rm -f /voodoo/run/lagfix_debug_enabled
+fi

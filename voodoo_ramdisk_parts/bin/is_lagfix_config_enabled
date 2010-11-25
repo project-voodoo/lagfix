@@ -1,6 +1,7 @@
 #!/bin/sh
-if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != ""; then
-	> /voodoo/run/lagfix_config_is_enabled
+if test "`find /sdcard/Voodoo/ -iname 'disable*lagfix*'`" = ""; then
+	echo "yes, lagfix config is enabled"
+	> /voodoo/run/lagfix_config_enabled
 else
-	rm -f /voodoo/run/lagfix_config_is_enabled
+	rm -f /voodoo/run/lagfix_config_enabled
 fi
