@@ -178,7 +178,6 @@ umount /efs
 mount /sdcard
 " > /sbin/postrecoveryboot.sh
 
-cat  /sbin/postrecoveryboot.sh
 
 # run the actual recovery
 /sbin/recovery &
