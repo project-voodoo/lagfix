@@ -27,6 +27,10 @@ case $resource_to_format in
 		fat.format -v -S 4096 -s 4 -F 32 $data_partition
 	;;
 	system)
+		# this partition tend to be repaired semi-successfuly after the
+		# terrible RFS mount bug. Prevent the recovery of any files
+		# after format, using 10MB of zeroes
+		dd if=/dev/zero of=$system_partition bs=4096 count=$(( 256 * 10 ))
 		fat.format -v -S 4096 -s 1 -F 32 $system_partition
 	;;
 esac

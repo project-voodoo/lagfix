@@ -45,6 +45,11 @@ mount_tmp()
 	mount -t ext4 $1 -o barrier=0,noatime /voodoo/tmp/mnt/ || mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
 }
 
+umount_tmp()
+{
+	umount /voodoo/tmp/mnt
+}
+
 
 log_time()
 {
@@ -154,7 +159,7 @@ detect_fs_on()
 		# that this Ext4 partition is just lost bits still here
 		if mount -t rfs -o ro,check=no $partition /voodoo/tmp/mnt data; then
 			log "RFS on $partition: Ext4 bits found but from an invalid and corrupted filesystem" 1
-			umount /voodoo/tmp/mnt
+			umount_tmp
 			echo rfs
 			return
 		fi
@@ -440,14 +445,13 @@ convert()
 	log "backup $resource" 1
 	say "step1"
 
-	log_time start
-
 	if ! mount_tmp $partition; then
 		log "ERROR: unable to mount $partition" 1
 		return 1
 	fi
 
-	if ! time tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ \
+	log_time start
+	if ! time tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ | cut -d/ -f4- \
 			| tee $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt > /dev/null; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "This error comes after an RFS filesystem has been mounted without the standard -o check=no" 1
@@ -457,16 +461,16 @@ convert()
 			if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ \
 				> $log_dir/"$resource"_backup_list_2.txt; then
 				log "Unable to save a correct backup: cancel conversion" 2
-				umount /voodoo/tmp/mnt
+				umount_tmp
 				return 1
 			else
 				log "second attempt successful"
 			fi
 		fi
 	fi
-	umount /voodoo/tmp/mnt/
+	umount_tmp
 	log_time end
-	
+
 	log "format $partition" 1
 	if test "$dest_fs" = "rfs"; then
 		rfs_format $resource
@@ -480,33 +484,27 @@ convert()
 	log "restore $resource" 1
 	say "step2"
 
-	log_time start
 
-	# free ram as soon as possible to avoid hitting a terrible RFS bug (supposed)
-	rm -rf /system_in_ram
-
+	mount_tmp $partition
 	if ! mount_tmp $partition; then
 		log "ERROR: unexpected issue, unable to mount $partition to restore the backup" 1
-		log "workaround adopted: formating to Ext4 again" 1
+		log "workaround adopted: reboot and catch the error later" 1
 		#  reformat to ext4 because it's not prone to bugs like RFS
-		ext4_format
-		output_fs=ext4
-		if ! mount_tmp $partition; then
-			log "ERROR: again unable to mount $partition, fat conversion error" 1
-			return 1
-		fi
+		sync
+		reboot -f
 	fi
 
-	if ! time tar xvf $sdcard/voodoo_"$resource"_conversion.tar \
+	log_time start
+	if ! time tar xvf $sdcard/voodoo_"$resource"_conversion.tar | cut -d/ -f4- \
 			| tee $log_dir/"$resource"_to_"$dest_fs"_restore_list.txt >/dev/null; then
 		log "ERROR: problem during $resource restore" 1
-		umount /voodoo/tmp/mnt/
+		umount_tmp/
 		return 1
 	fi
 	log_time end
 	test "debug_mode" != 1 && rm $sdcard/voodoo_"$resource"_conversion.tar
 
-	umount /voodoo/tmp/mnt/
+	umount_tmp
 
 	# remount /system if needed
 	test $resource = system && system_fs=$output_fs
@@ -517,12 +515,57 @@ convert()
 }
 
 
+
+restore_failed_system_rfs_conversion()
+{
+	# thanks to Mish for the idea
+
+	system_archive=$sdcard/voodoo_system_conversion.tar
+	
+	if test -f $system_archive; then
+		# check if /sytem is empty (or at contains less than 20MB of data)
+
+		if test `du -s /system | cut -d/ -f1` -lt 20480; then
+			log "restore a /system conversion to RFS prevented by an RFS bug"
+			rm -rf /system/*
+			umount /system
+
+			log_time start
+			mount_tmp $system_partition
+			if tar xvf $system_archive | cut -d/ -f4- \
+				| tee $log_dir/system_rfs_conversion_workaround_restore_list.txt >/dev/null; then
+			log_time end
+				log "/system backup restored, workaround successful"
+				rm $system_archive
+			else
+				mv $system_archive $sdcard/voodoo_system_conversion_failed_restore.tar
+				log "/system backup error, unrecoverable error"
+				log "attempting boot to recovery"
+				# attempt to boot real
+				/system/bin/reboot recovery || reboot -f
+			fi
+			umount_tmp
+
+			mount_ system
+		else
+			log "found a /system temporary archive but it looks already okay"
+			log "$sdcard/voodoo_system_conversion.tar ignored"
+		fi
+	fi
+
+}
+
+
+
 letsgo()
 {
 	# mount Ext4 partitions
 	test $cache_fs = ext4 && mount_ cache
 	test $dbdata_fs = ext4 && mount_ dbdata
 	test $data_fs = ext4 && mount_ data && > /voodoo/run/lagfix_enabled
+
+	# free ram
+	rm -rf /system_in_ram
 
 	# remove the tarball in maximum compression mode
 	rm -f compressed_voodoo_ramdisk.tar.lzma

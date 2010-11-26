@@ -48,7 +48,7 @@ PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
 
 
 # STAGE 1
-# insmod required modules
+# insmod required filesystem modules
 insmod /lib/modules/fsr.ko
 insmod /lib/modules/fsr_stl.ko
 insmod /lib/modules/rfs_glue.ko
@@ -73,48 +73,6 @@ if ! detect_supported_model_and_setup_partitions; then
 fi
 
 
-# find what we got
-detect_all_filesystems
-
-
-# find kernel version
-configure_from_kernel_version
-
-
-# mount /system so we will be able to use df, fat.format and asound.conf
-mount_ system
-# copy the sound configuration
-cp /system/etc/asound.conf /etc/asound.conf
-
-
-# we will need these directories
-mkdir /cache 2> /dev/null
-mkdir /dbdata 2> /dev/null 
-mkdir /data 2> /dev/null 
-
-# unpack myself : STAGE 2
-load_stage 2
-
-
-# debug mode detection
-if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test "$debug_mode" = 1 ; then
-	log "debug mode enabled"
-
-	# TODO : rewrite the same thing cleaner
-	# force enabling very powerful debug tools (and yes, root from adb !)
-	mv default.prop default.prop-stock
-	echo "# Voodoo lagfix: debug mode enabled" >> default.prop
-	echo "ro.secure=0" >> default.prop
-	echo "ro.allow.mock.location=0" >> default.prop
-	# echo "ro.debuggable=1" >> default.prop
-	echo "persist.service.adb.enable=1" >> default.prop
-	cat  default.prop-stock >> default.prop
-	rm default.prop-stock
-
-	debug_mode=1
-fi
-
-
 # read if the lagfix is enabled or not
 if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 	lagfix_enabled=0
@@ -133,6 +91,56 @@ else
 	system_conversion_enabled=1
 	log "option: lagfix is allowed to convert /system"
 fi
+
+
+# debug mode detection
+if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test "$debug_mode" = 1 ; then
+	log "option: debug mode enabled"
+
+	# TODO : rewrite the same thing cleaner
+	# force enabling very powerful debug tools (and yes, root from adb !)
+	mv default.prop default.prop-stock
+	echo "# Voodoo lagfix: debug mode enabled" >> default.prop
+	echo "ro.secure=0" >> default.prop
+	echo "ro.allow.mock.location=0" >> default.prop
+	# echo "ro.debuggable=1" >> default.prop
+	echo "persist.service.adb.enable=1" >> default.prop
+	cat  default.prop-stock >> default.prop
+	rm default.prop-stock
+
+	debug_mode=1
+fi
+
+
+# find what we got
+detect_all_filesystems
+
+
+# find kernel version
+configure_from_kernel_version
+
+
+# mount /system so we will be able to use df, fat.format and asound.conf
+mount_ system
+
+
+# workaround the terrible RFS mount bug:
+# check if there is a backup of /system and if /system looks empty
+restore_failed_system_rfs_conversion
+
+
+# copy the sound configuration
+cp /system/etc/asound.conf /etc/asound.conf
+
+
+# we will need these directories
+mkdir /cache 2> /dev/null
+mkdir /dbdata 2> /dev/null 
+mkdir /data 2> /dev/null 
+
+
+# unpack myself : STAGE 2
+load_stage 2
 
 
 if in_recovery; then
@@ -197,6 +205,7 @@ if in_recovery; then
 else
 	rm -rf /cwm
 fi
+rm -rf /cwm
 
 
 

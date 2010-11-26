@@ -154,7 +154,8 @@ ln -s voodoo/root/usr .
 # after that it needs to be removed
 rm -f etc
 ln -s voodoo/root/etc .
-ln -s ../bin/busybox bin/insmod
+ln -s busybox bin/insmod
+ln -s busybox bin/reboot
 
 
 # create the main init symlink
