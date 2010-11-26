@@ -484,20 +484,22 @@ convert()
 	log "restore $resource" 1
 	say "step2"
 
+	if test $output_fs = rfs && test $resource = system; then
+		log "reboot to avoid mount failure due to RFS driver bugs"
+		reboot -f
+	fi
 
 	if ! mount_tmp $partition; then
 		log "ERROR: unexpected issue, unable to mount $partition to restore the backup" 1
-		log "workaround adopted: reboot and catch the error later" 1
-		#  reformat to ext4 because it's not prone to bugs like RFS
-		sync
-		reboot -f
+		umount_tmp
+		return 1
 	fi
 
 	log_time start
 	if ! time tar xvf $sdcard/voodoo_"$resource"_conversion.tar | cut -d/ -f4- \
 			| tee $log_dir/"$resource"_to_"$dest_fs"_restore_list.txt >/dev/null; then
 		log "ERROR: problem during $resource restore" 1
-		umount_tmp/
+		umount_tmp
 		return 1
 	fi
 	log_time end
@@ -515,17 +517,19 @@ convert()
 
 
 
-restore_failed_system_rfs_conversion()
+finalize_system_rfs_conversion()
 {
 	# thanks to Mish for the idea
 
+	min_system_size=20480
 	system_archive=$sdcard/voodoo_system_conversion.tar
 	
+	# check if the /system archive is there and is more than 20MB
 	if test -f $system_archive; then
-		# check if /sytem is empty (or at contains less than 20MB of data)
 
-		if test `du -s /system | cut -d/ -f1` -lt 20480; then
-			log "restore a /system conversion to RFS prevented by an RFS bug"
+		# check if /sytem is empty (or at contains less than 20MB of data)
+		if test `du -s /system | cut -d/ -f1` -lt $min_system_size; then
+			log "finalize /system conversion to RFS: restore backup"
 			rm -rf /system/*
 			umount /system
 
@@ -534,14 +538,13 @@ restore_failed_system_rfs_conversion()
 			if tar xvf $system_archive | cut -d/ -f4- \
 				| tee $log_dir/system_rfs_conversion_workaround_restore_list.txt >/dev/null; then
 			log_time end
-				log "/system backup restored, workaround successful"
+				log "/system backup restored, workaround successful" 1
 				rm $system_archive
 			else
 				mv $system_archive $sdcard/voodoo_system_conversion_failed_restore.tar
-				log "/system backup error, unrecoverable error"
-				log "attempting boot to recovery"
-				# attempt to boot real
-				/system/bin/reboot recovery || reboot -f
+				log "/system backup error, unrecoverable error" 1
+				log "attempt boot to recovery" 1
+				/system/bin/reboot recovery
 			fi
 			umount_tmp
 
@@ -549,6 +552,7 @@ restore_failed_system_rfs_conversion()
 		else
 			log "found a /system temporary archive but it looks already okay"
 			log "$sdcard/voodoo_system_conversion.tar ignored"
+			test $debug_mode != 1 && rm $system_archive
 		fi
 	fi
 
@@ -559,9 +563,10 @@ restore_failed_system_rfs_conversion()
 letsgo()
 {
 	# mount Ext4 partitions
-	test $cache_fs = ext4 && mount_ cache
-	test $dbdata_fs = ext4 && mount_ dbdata
+	test $cache_fs = ext4 && mount_ cache && > /voodoo/run/lagfix_enabled
+	test $dbdata_fs = ext4 && mount_ dbdata && > /voodoo/run/lagfix_enabled
 	test $data_fs = ext4 && mount_ data && > /voodoo/run/lagfix_enabled
+	test $system_fs = ext4 && > /voodoo/run/lagfix_enabled
 
 	# free ram
 	rm -rf /system_in_ram

@@ -126,7 +126,7 @@ mount_ system
 
 # workaround the terrible RFS mount bug:
 # check if there is a backup of /system and if /system looks empty
-restore_failed_system_rfs_conversion
+finalize_system_rfs_conversion
 
 
 # copy the sound configuration
