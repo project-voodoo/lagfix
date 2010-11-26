@@ -485,7 +485,6 @@ convert()
 	say "step2"
 
 
-	mount_tmp $partition
 	if ! mount_tmp $partition; then
 		log "ERROR: unexpected issue, unable to mount $partition to restore the backup" 1
 		log "workaround adopted: reboot and catch the error later" 1
