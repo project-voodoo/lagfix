@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # By François SIMOND for project-voodoo.org
 # License GPL v3
@@ -55,11 +55,10 @@ activate_adbd_wrapper()
 add_run_parts()
 {
 	rc_file=$1
-	echo >> $rc_file
-	echo "service run-parts /voodoo/scripts/run-parts.sh /system/etc/init.d" >> $rc_file
-	echo "  oneshot \n" >> $rc_file
+	echo -e "\nservice run-parts /voodoo/scripts/run-parts.sh /system/etc/init.d" >> $rc_file
+	echo -e "  oneshot \n" >> $rc_file
 
-	echo "start run-parts" >> $rc_file
+	echo -e "start run-parts" >> $rc_file
 }
 
 
