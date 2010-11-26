@@ -19,7 +19,7 @@ cp -rpf /cwm/sbin/* /sbin
 
 # shorter /sbin/busybox sh -c /sbin/killrecovery.sh
 mkdir -p /sd-ext
-rm /cache/recovery/command
-rm /cache/update.zip
+rm -f /cache/recovery/command
+rm -f /cache/update.zip
 mkdir /tmp
 > /tmp/.ignorebootmessage
