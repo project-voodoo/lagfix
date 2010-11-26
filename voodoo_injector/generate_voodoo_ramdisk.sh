@@ -55,7 +55,8 @@ activate_adbd_wrapper()
 add_run_parts()
 {
 	rc_file=$1
-	echo "\nservice run-parts /voodoo/scripts/run-parts.sh /system/etc/init.d" >> $rc_file
+	echo >> $rc_file
+	echo "service run-parts /voodoo/scripts/run-parts.sh /system/etc/init.d" >> $rc_file
 	echo "  oneshot \n" >> $rc_file
 
 	echo "start run-parts" >> $rc_file
