@@ -31,8 +31,5 @@ case $resource_to_format in
 	;;
 esac
 
-# take time to sync before mouting or anything else
-sync
-
 # kill/quit :D
 killall -9 init_samsung
