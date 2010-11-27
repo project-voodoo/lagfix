@@ -1,0 +1,9 @@
+Info-Zip zip binary is used by the apk_cleaner Voodoo lagfix extension
+
+You can compile it after the stages are built
+
+How to:
+
+./scripts/download_extract_and_patch_zip.sh
+./scripts/build.sh
+./install_in_extensions.sh
