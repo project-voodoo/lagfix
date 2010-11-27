@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # By François SIMOND for project-voodoo.org
 # License GPL v3
