@@ -14,13 +14,18 @@ mount -t sysfs sys /sys
 
 # mount the sdcard for Galaxy S and Fascinate
 # detect Fascinate
-if test "`cat /sys/block/mmcblk0/size`" = 3907584; then
-	# we are on fascinate,
-	mount -t vfat -o utf8 /dev/block/mmcblk1p1 $sdcard
-else
-	# every other Galaxy S
-	mount -t vfat -o utf8 /dev/block/mmcblk0p1 $sdcard
-fi
+sdcard_is_mounted=0
+wait=0
+while test sdcard_is_mounted = 0; do
+	sleep $wait
+	if test "`cat /sys/block/mmcblk0/size`" = 3907584; then
+		# we are on fascinate,
+		mount -t vfat -o utf8 /dev/block/mmcblk1p1 $sdcard && sdcard_is_mounted=1 || wait=1
+	else
+		# every other Galaxy S
+		mount -t vfat -o utf8 /dev/block/mmcblk0p1 $sdcard && sdcard_is_mounted=1 || wait=1
+	fi
+done
 
 # save the logs written during unfinished boots
 mv $log_dir $sdcard/Voodoo/logs/boot-`date '+%Y-%m-%d_%H-%M-%S'`-error 2>/dev/null
