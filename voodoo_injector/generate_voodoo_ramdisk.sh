@@ -116,6 +116,16 @@ change_memory_management_settings()
 }
 
 
+tune_fs_options()
+{
+	cat init.rc | \
+	sed s/"dirty_expire_centisecs.*"/"dirty_expire_centisecs 800"/ | \
+	sed s/"dirty_background_ratio.*"/"dirty_background_ratio  2"/ > /tmp/init.rc
+
+	cp /tmp/init.rc init.rc
+}
+
+
 # save the original running path
 run_pwd=$PWD
 
@@ -149,6 +159,9 @@ activate_adbd_wrapper
 # change memory thresholds too Voodoo optimized ones
 change_memory_management_settings
 
+# vfs settings
+tune_fs_options
+
 # run-parts support
 add_run_parts init.rc
 add_run_parts recovery.rc
@@ -161,7 +174,7 @@ cd $run_pwd
 cp -a $voodoo_ramdisk_parts $working_dir/voodoo
 
 # copy the extensions in voodoo/
-cp -a $extentions_source $working_dir/voodoo/
+test -n "$extentions_source" && cp -a $extentions_source $working_dir/voodoo/
 cd $working_dir
 
 
