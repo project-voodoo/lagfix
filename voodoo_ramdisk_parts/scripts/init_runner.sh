@@ -16,7 +16,7 @@ mount -t sysfs sys /sys
 # detect Fascinate
 sdcard_is_mounted=0
 wait=0
-while test sdcard_is_mounted = 0; do
+while test $sdcard_is_mounted = 0; do
 	sleep $wait
 	if test "`cat /sys/block/mmcblk0/size`" = 3907584; then
 		# we are on fascinate,
