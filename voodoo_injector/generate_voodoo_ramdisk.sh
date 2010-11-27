@@ -7,8 +7,44 @@
 # use a standard ramdisk directory as input, and make it Voodoo!
 # recommanded to wipe the destination directory first
 #
-# usage: generate_voodoo_ramdisk.sh stock_ramdisk voodoo_ramdisks voodoo_ramdisk_parts stages_source build_only_uncompressed
-#
+# usage: generate_voodoo_ramdisk.sh
+#	-s ramdisk_source_directory
+#	-d voodoo_ramdisks_output_directory
+#	-p voodoo_ramdisk_parts_directory
+#	-x voodoo_lagfix_extensions_directory
+#	-t stages_source_directory
+#	[-u] : build only the uncompressed version ramdisk
+
+
+
+# parse options
+while getopts s:d:p:t:x:u opt
+do
+	case "$opt" in
+		s) source="$OPTARG";;
+		d) dest="$OPTARG";;
+		p) voodoo_ramdisk_parts="$OPTARG";;
+		t) stages_source="$OPTARG";;
+		x) extentions_source="$OPTARG";;
+		u) only_uncompressed=1;;
+		\?)
+			echo "help!!!"
+			exit 1
+		;;
+	esac
+done
+
+# check directories
+if ! test -d $voodoo_ramdisk_parts || \
+   ! test -n $dest || \
+   ! test -d $source ; then
+	echo "please specify 3 valid directories names"
+	exit 1
+fi
+
+if ! test -n "$extentions_source" && ! test -d $extentions_source; then
+	echo "please specify a valid extension source directory"
+fi
 
 make_cpio()
 {
@@ -80,23 +116,11 @@ change_memory_management_settings()
 }
 
 
-if ! test -d "$3" || ! test -n "$2" || ! test -d "$1" ; then
-	echo "please specify 3 valid directories names"
-	exit 1
-fi
-
-source=$1
-dest=$2
-voodoo_ramdisk_parts=$3
-# FIXME: fix this messy stage source stuff
-stages_source=$4
-
-my_pwd=`pwd`
-
+# save the original running path
+run_pwd=$PWD
 
 # create the destination directory
-mkdir $dest 2>/dev/null
-
+mkdir -p $dest 2>/dev/null
 
 # test if stage2 and at least stage3-sound exist
 # FIXME: paths madness
@@ -107,10 +131,12 @@ if ! test -f stage2* || ! test -f stage3-sound*; then
 fi
 cd - > /dev/null
 
-
 # copy the ramdisk source to the voodoo ramdisk directory
 cp -ax $source $dest/uncompressed
 cd $dest/uncompressed
+
+# save working dir
+working_dir=$PWD
 
 mv init init_samsung
 
@@ -131,8 +157,12 @@ add_run_parts recovery.rc
 optimize_cwm_directory
 
 # copy ramdisk stuff
-mkdir voodoo 2>/dev/null
-cp -ax $my_pwd/$voodoo_ramdisk_parts/* voodoo/
+cd $run_pwd
+cp -a $voodoo_ramdisk_parts $working_dir/voodoo
+
+# copy the extensions in voodoo/
+cp -a $extentions_source $working_dir/voodoo/
+cd $working_dir
 
 
 # empty directories, probably not in gits
@@ -161,7 +191,6 @@ ln -s busybox bin/reboot
 
 # create the main init symlink
 ln -s voodoo/scripts/init_runner.sh init
-#ln -s init_samsung init
 
 
 # extract stage1 busybox
@@ -182,7 +211,7 @@ done
 # copy the uncompressed ramdisk to the compressed before decompressing
 # stage images in it
 cd ..
-cp -a uncompressed compressed
+! test $only_uncompressed = 1 && cp -a uncompressed compressed
 
 
 # do the uncompressed one
@@ -194,6 +223,7 @@ for x in ../../../lagfix/stages_builder/stages/*.lzma; do
 	> voodoo/run/`basename "$x" .tar.lzma`_loaded
 done
 
+
 # remove the etc symlink wich will causes problems when we boot
 # directly on samsung_init
 rm etc
@@ -201,7 +231,7 @@ cd ..
 
 make_cpio uncompressed
 
-if ! test -n "$5"; then
+if test $only_uncompressed = 1; then
 	echo "Building only uncompressed ramdisk"
 	exit
 fi
