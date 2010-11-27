@@ -1,4 +1,6 @@
 #!/bin/sh
 
 cd zip30
-make -f unix/Makefile generic
+ln -s ../../addons/Makefile-voodoo unix/
+make -f unix/Makefile-voodoo clean
+make -f unix/Makefile-voodoo -j8 generic

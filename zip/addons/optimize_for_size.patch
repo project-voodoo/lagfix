@@ -1,0 +1,38 @@
+--- zip30/unix/configure	2008-06-20 05:32:20.000000000 +0200
++++ zip30/unix/configure	2010-11-27 04:48:28.258483582 +0100
+@@ -42,7 +42,7 @@
+ _EOF_
+ $CC $CFLAGS -c conftest.c > /dev/null 2>/dev/null
+ if test $? -eq 0; then
+-  CFLAGS_OPT='-xO3'
++  CFLAGS_OPT='-xOs'
+   echo "  Sun C ($CFLAGS_OPT)"
+ else
+   # Tru64 DEC/Compaq/HP C?
+@@ -57,7 +57,7 @@
+ _EOF_
+   $CC $CFLAGS -c conftest.c > /dev/null 2>/dev/null
+   if test $? -eq 0; then
+-    CFLAGS_OPT='-O3'
++    CFLAGS_OPT='-Os'
+     echo "  DEC C ($CFLAGS_OPT)"
+   else
+     # HP-UX HP C?
+@@ -76,7 +76,7 @@
+     $CC $CFLAGS -c conftest.c > /dev/null 2>/dev/null
+     if test $? -eq 0; then
+       # HP-UX, not GCC.  Lame bundled or real ANSI compiler?
+-      CFLAGS_OPT_TRY="+O3 +Onolimit"
++      CFLAGS_OPT_TRY="+Os +Onolimit"
+       $CC $CFLAGS $CFLAGS_OPT_TRY -c conftest.c 2>&1 | \
+        grep '(Bundled)' > /dev/null
+       if test $? -ne 0; then
+@@ -98,7 +98,7 @@
+ _EOF_
+       $CC $CFLAGS -c conftest.c > /dev/null 2>/dev/null
+       if test $? -eq 0; then
+-        CFLAGS_OPT='-O3'
++        CFLAGS_OPT='-Os'
+         echo "  GNU C ($CFLAGS_OPT)"
+         # Special Mac OS X shared library "ld" option?
+         if test ` uname -s 2> /dev/null ` = 'Darwin'; then
