@@ -39,7 +39,8 @@ optimize_cwm_directory()
 
 activate_recovery_wrapper()
 {
-	sed s/"service recovery .*bin\/recovery"/"service recovery \/voodoo\/scripts\/recovery_wrapper.sh"/ recovery.rc > /tmp/recovery.rc
+	sed s/"service recovery .*bin\/recovery"/"service recovery \/voodoo\/scripts\/recovery_wrapper.sh"/ \
+		recovery.rc > /tmp/recovery.rc
 	sed s/"service console \/system\/bin\/sh"/''/ /tmp/recovery.rc | \
 		sed s/".*console$"/""/ > recovery.rc
 }
