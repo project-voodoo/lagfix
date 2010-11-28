@@ -186,7 +186,7 @@ if in_recovery; then
 		fi
 
 		# little help for sdcard mounting
-		echo -n /sdcard_device > /voodoo/run/sdcard_device
+		echo -n "$sdcard_device" > /voodoo/run/sdcard_device
 
 		/voodoo/scripts/cwm_setup.sh
 		# setup the mount wrapper

@@ -73,7 +73,7 @@ log_time()
 			start=`date '+%s'` ;;
 		end)
 			end=`date '+%s'`
-			log 'time spent: '$(( $end - $start ))'s' 2 ;;
+			log 'time spent: '$(( $end - $start ))' s' 2 ;;
 	esac
 }
 
@@ -474,7 +474,7 @@ convert()
 	log "convert $resource ($partition) from $source_fs to $dest_fs"
 
 	archive=/sdcard/voodoo_"$resource"_conversion.tar
-	archive_saved=/sdcard/voodoo_"$resource"_conversion.tar
+	archive_saved=/sdcard/voodoo_"$resource"_conversion_saved.tar
 	rm -f $archive $archive_saved
 
 	# tag the log for easier analysis
@@ -520,8 +520,7 @@ convert()
 	fi
 
 	log_time start
-	if ! time tar cvf $archive /voodoo/tmp/mnt/ | cut -d/ -f4- \
-			> $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt; then
+	if ! time tar cv /voodoo/tmp/mnt/ 2> $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt | dd bs=$(( 4096 * 1024 )) | dd of=$archive bs=$(( 4096 * 1024 )); then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "This error comes after an RFS filesystem has been mounted without the standard -o check=no" 1
 		if test $source_fs = rfs; then
@@ -566,7 +565,7 @@ convert()
 	fi
 
 	log_time start
-	if ! time tar xvf $archive | cut -d/ -f4- \
+	if ! dd if=$archive bs=$(( 4096 * 1024 )) | dd bs=$(( 4096 * 1024 )) | time tar xv | cut -d/ -f4- \
 			> $log_dir/"$resource"_to_"$dest_fs"_restore_list.txt >/dev/null; then
 		log "ERROR: problem during $resource restore" 1
 		umount_tmp
@@ -604,6 +603,7 @@ finalize_interrupted_rfs_conversion()
 
 	for resource in dbdata data system; do
 		archive=/sdcard/voodoo_"$resource"_conversion.tar
+		archive_ignored=/sdcard/voodoo_"$resource"_conversion_ignored.tar
 
 		# check if the /system archive is there and is more than 20MB
 		if test -f $archive; then
@@ -624,7 +624,7 @@ finalize_interrupted_rfs_conversion()
 
 				log_time start
 				mount_tmp $partition
-				if tar xvf $archive | cut -d/ -f4- \
+				if dd if=$archive bs=$(( 4096 * 1024 )) | dd bs=$(( 4096 * 1024 )) | tar xv | cut -d/ -f4- \
 						> $log_dir/"$resource"_rfs_conversion_workaround_restore_list.txt; then
 					log_time end
 					log "/$resource backup restored, workaround successful" 1
@@ -642,7 +642,11 @@ finalize_interrupted_rfs_conversion()
 			else
 				log "found a /$resource conversion temporary archive but the partition looks already okay"
 				log "/sdcard/voodoo_"$resource'_conversion.tar ignored'
-				test $debug_mode != 1 && rm $archive
+				if $debug_mode = 1; then
+					mv $archive $archive_ignored
+				else
+					rm $archive
+				fi
 			fi
 		fi
 	done
