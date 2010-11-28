@@ -118,10 +118,10 @@ change_memory_management_settings()
 
 tune_fs_options()
 {
+	# simply prevent lag from happening
 	cat init.rc | \
 	sed s/"dirty_expire_centisecs.*"/"dirty_expire_centisecs 800"/ | \
-	sed s/"dirty_background_ratio.*"/"dirty_background_ratio  2"/ > /tmp/init.rc
-
+	sed s/"dirty_background_ratio.*"/"dirty_background_ratio 2"/ > /tmp/init.rc
 	cp /tmp/init.rc init.rc
 }
 
