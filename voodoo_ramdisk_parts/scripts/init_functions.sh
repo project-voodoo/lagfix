@@ -521,7 +521,7 @@ convert()
 
 	log_time start
 	if ! time tar cvf $archive /voodoo/tmp/mnt/ | cut -d/ -f4- \
-			> $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt
+			> $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "This error comes after an RFS filesystem has been mounted without the standard -o check=no" 1
 		if test $source_fs = rfs; then
