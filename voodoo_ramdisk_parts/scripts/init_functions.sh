@@ -229,7 +229,7 @@ say()
 	# sound system lazy loader
 	if load_soundsystem; then 
 		# play !
-		madplay -A -4 -o wave:- "/voodoo/voices/$1.mp3" 2> /dev/null | \
+		madplay -A -3 -o wave:- "/voodoo/voices/$1.mp3" 2> /dev/null | \
 			 aplay -Dpcm.AndroidPlayback_Speaker --buffer-size=4096
 	fi
 }
@@ -561,6 +561,7 @@ convert()
 		log_suffix='-RFS-bug-hit'
 		manage_logs
 		ensure_reboot
+		# past here this code is supposed to be never excecuted
 		return 1
 	fi
 
