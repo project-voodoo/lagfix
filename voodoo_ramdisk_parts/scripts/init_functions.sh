@@ -351,9 +351,9 @@ check_free_space()
 	# read space free on the partition we need to backup
 	space_free=$((`df /$resource | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
 
-	log "partition free space: $space_free MB" 2
-	log "space needed on SD:   $space_needed MB" 2
-	log "free space on SD:     $target_free MB" 2
+	log "used:             $space_free MB" 2
+	log "available:        $space_needed MB" 2
+	log "sdcard available: $target_free MB" 2
 
 	# check if the Ext4 overhead let us enough space
 	if test $dest_fs = ext4; then
