@@ -36,3 +36,5 @@ mknod /dev/snd/pcmC1D0c c 116 56
 mknod /dev/snd/pcmC1D0p c 116 48
 mknod /dev/snd/timer c 116 33
 
+# watchdog: reboot assurance
+mkdir /dev/watchdog c 10 130
