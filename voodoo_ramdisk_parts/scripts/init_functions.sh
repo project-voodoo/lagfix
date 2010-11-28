@@ -473,6 +473,9 @@ convert()
 	fi
 	log "convert $resource ($partition) from $source_fs to $dest_fs"
 
+	archive=/sdcard/voodoo_"$resource"_conversion.tar
+	rm $archive
+
 	# tag the log for easier analysis
 	test $resource != cache && test $resource != dbdata && log_suffix='-conversion'
 
@@ -516,7 +519,7 @@ convert()
 	fi
 
 	log_time start
-	if ! time tar cvf /sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ | cut -d/ -f4- \
+	if ! time tar cvf $archive /voodoo/tmp/mnt/ | cut -d/ -f4- \
 			| tee $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt > /dev/null; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "This error comes after an RFS filesystem has been mounted without the standard -o check=no" 1
@@ -561,14 +564,14 @@ convert()
 	fi
 
 	log_time start
-	if ! time tar xvf /sdcard/voodoo_"$resource"_conversion.tar | cut -d/ -f4- \
+	if ! time tar xvf $archive | cut -d/ -f4- \
 			| tee $log_dir/"$resource"_to_"$dest_fs"_restore_list.txt >/dev/null; then
 		log "ERROR: problem during $resource restore" 1
 		umount_tmp
 		return 1
 	fi
 	log_time end
-	test "debug_mode" != 1 && rm /sdcard/voodoo_"$resource"_conversion.tar
+	test "debug_mode" != 1 && rm $archive
 
 	umount_tmp
 
