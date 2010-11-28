@@ -124,6 +124,12 @@ configure_from_kernel_version
 mount_ system
 
 
+# we will need these directories
+mkdir /cache 2> /dev/null
+mkdir /dbdata 2> /dev/null
+mkdir /data 2> /dev/null
+
+
 # workaround the terrible RFS mount bug:
 # check if there is a backup of a conversion interrupted by the terrible
 # rfs driver bug:
@@ -133,12 +139,6 @@ finalize_interrupted_rfs_conversion
 # copy the sound configuration
 cp /system/etc/asound.conf /etc/asound.conf
 cp /system/etc/asound.conf /sdcard/Voodoo/
-
-# we will need these directories
-mkdir /cache 2> /dev/null
-mkdir /dbdata 2> /dev/null 
-mkdir /data 2> /dev/null 
-
 
 # unpack myself : STAGE 2
 load_stage 2
