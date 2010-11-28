@@ -100,7 +100,7 @@ load_stage()
 				if test -f $stagefile; then
 					# this stage is in ramdisk. no security check
 					log "load stage2"
-					lzcat $stagefile | tar xvf
+					lzcat $stagefile | tar xv
 				else
 					log "no stage2 to load"
 				fi
@@ -111,7 +111,7 @@ load_stage()
 				# useful for testing and when size don't matter
 				if test -f /voodoo/stage$1.tar.lzma; then
 					log "load stage $1 from ramdisk"
-					lzcat /voodoo/stage$1.tar.lzma | tar xvf
+					lzcat /voodoo/stage$1.tar.lzma | tar xv
 				else
 
 					stagefile="/sdcard/Voodoo/resources/stage$1.tar.lzma"
