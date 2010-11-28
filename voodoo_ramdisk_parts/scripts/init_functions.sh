@@ -474,7 +474,7 @@ convert()
 	log "convert $resource ($partition) from $source_fs to $dest_fs"
 
 	archive=/sdcard/voodoo_"$resource"_conversion.tar
-	rm $archive
+	rm -f $archive
 
 	# tag the log for easier analysis
 	test $resource != cache && test $resource != dbdata && log_suffix='-conversion'
@@ -571,7 +571,7 @@ convert()
 		return 1
 	fi
 	log_time end
-	test "debug_mode" != 1 && rm $archive
+	test $debug_mode != 1 && rm $archive
 
 	umount_tmp
 
