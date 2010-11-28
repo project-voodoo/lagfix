@@ -1,2 +1,2 @@
 # declaration of constants used in several scripts
-log_dir='/voodoo/tmp/sdcard/Voodoo/logs/latest'
+log_dir='/sdcard/Voodoo/logs/latest'
