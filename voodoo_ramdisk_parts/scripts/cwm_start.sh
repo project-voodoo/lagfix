@@ -166,7 +166,7 @@ ln -s busybox /sbin/zcat
 
 
 # also shorter
-echo "#!/sbin/sh
+echo '#!/sbin/sh
 set -x
 exec >> /voodoo/logs/cwm_postrecoveryboot_log.txt 2>&1
 rm /etc
@@ -175,8 +175,9 @@ mkdir -p /datadata
 chmod 4777 /sbin/su
 umount /efs
 
-mount /sdcard
-" > /sbin/postrecoveryboot.sh
+# succeed to mount the sdcard by default even with broken fstab
+mount -t vfat -o rw,nosuid,nodev,noexec,uid=1000,gid=1015,fmask=0002,dmask=0002,allow_utime=0020,iocharset=iso8859-1,shortname=mixed,utf8,errors=remount-ro "`cat /voodoo/run/sdcard_device`" /sdcard
+' > /sbin/postrecoveryboot.sh
 
 
 # run the actual recovery
