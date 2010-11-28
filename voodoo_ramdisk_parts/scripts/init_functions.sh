@@ -1,41 +1,55 @@
 # voodoo lagfix functions
 
+get_partition_for()
+{
+	# resource partition getter which set a global variable named partition
+	case $1 in
+		cache)	partition=$cache_partition ;;
+		dbdata)	partition=$dbdata_partition ;;
+		data)	partition=$data_partition ;;
+		system)	partition=$system_partition ;;
+	esac
+}
+
+
+get_fs_for()
+{
+	# resource filesystem getter which set a global variable named fs
+	case $1 in
+		cache)	fs=$cache_fs ;;
+		dbdata)	fs=$dbdata_fs ;;
+		data)	fs=$data_fs ;;
+		system)	fs=$system_fs ;;
+	esac
+}
+
+
+set_fs_for()
+{
+	# resource filesystem getter which set a global variable named fs
+	case $1 in
+		cache)	cache_fs=$2 ;;
+		dbdata)	dbdata_fs=$2 ;;
+		data)	data_fs=$2 ;;
+		system)	system_fs=$2 ;;
+	esac
+}
+
+
 mount_()
 {
-	case $1 in
-		cache)
-			if test "$cache_fs" = "ext4"; then
-				e2fsck -p $cache_partition
-				mount -t ext4 -o noatime,barrier=0,data=writeback$ext4_options $cache_partition /cache
-			else
-				mount -t rfs -o nosuid,nodev,check=no $cache_partition /cache
-			fi
-		;;
-		dbdata)
-			if test "$dbdata_fs" = "ext4"; then
-				e2fsck -p $dbdata_partition
-				mount -t ext4 -o noatime,barrier=0$ext4_options $dbdata_partition /dbdata
-			else
-				mount -t rfs -o nosuid,nodev,check=no $dbdata_partition /dbdata
-			fi
-		;;
-		data)
-			if test "$data_fs" = "ext4"; then
-				e2fsck -p $data_partition
-				mount -t ext4 -o noatime,barrier=0$ext4_options $data_partition /data
-			else
-				mount -t rfs -o nosuid,nodev,check=no $data_partition /data
-			fi
-		;;
-		system)
-			if test "$system_fs" = "ext4"; then
-				e2fsck -p $system_partition
-				mount -t ext4 -o noatime,barrier=0$ext4_options $system_partition /system
-			else
-				mount -t rfs -o check=no $system_partition /system
-			fi
-		;;
-	esac
+	get_partition_for $1
+	get_fs_for $1
+
+	if test "$fs" = "ext4"; then
+		e2fsck -p $partition
+		test $1 = cache && ext4_data_options=',data=writeback'
+		# mount as Ext4
+		mount -t ext4 -o noatime,barrier=0$ext4_data_options$ext4_options $partition /$1
+	else
+		# mount as RFS with standard options
+		mount -t rfs -o nosuid,nodev,check=no $partition /$1
+	fi
 }
 
 
@@ -44,6 +58,7 @@ mount_tmp()
 	# used during conversions and detection
 	mount -t ext4 $1 -o barrier=0,noatime /voodoo/tmp/mnt/ || mount -t rfs -o check=no $1 /voodoo/tmp/mnt/
 }
+
 
 umount_tmp()
 {
@@ -55,13 +70,23 @@ log_time()
 {
 	case $1 in
 		start)
-			start=`date '+%s'`
-		;;
+			start=`date '+%s'` ;;
 		end)
 			end=`date '+%s'`
-			log 'time spent: '$(( $end - $start ))'s' 1
-		;;
+			log 'time spent: '$(( $end - $start ))'s' 2 ;;
 	esac
+}
+
+
+ensure_reboot()
+{
+	# send a message to the watchdog to be sure we reboot even if #
+	# reboot command fails
+	# loosely using the watchdog device which is supposed
+	# to be managed by a watchdog daemonq
+	echo 0 > /dev/watchdog
+	# trigger reboot with the standard method
+	/bin/reboot -f
 }
 
 
@@ -79,7 +104,7 @@ load_stage()
 				else
 					log "no stage2 to load"
 				fi
-			;;
+				;;
 			*)
 				# give the option to load without signature
 				# from the ramdisk itself
@@ -89,7 +114,7 @@ load_stage()
 					lzcat /voodoo/stage$1.tar.lzma | tar xvf
 				else
 
-					stagefile="$sdcard/Voodoo/resources/stage$1.tar.lzma"
+					stagefile="/sdcard/Voodoo/resources/stage$1.tar.lzma"
 
 					# load the designated stage after verifying it's
 					# signature to prevent security exploit from sdcard
@@ -107,8 +132,7 @@ load_stage()
 					fi
 					test retcode = 1 && log "stage $1 not loaded, stage file don't exist"
 				fi
-
-			;;
+				;;
 		esac
 		> /voodoo/run/stage$1_loaded
 	fi
@@ -151,7 +175,7 @@ detect_supported_model_and_setup_partitions()
 detect_fs_on()
 {
 	resource=$1
-	partition=$2
+	get_partition_for $resource
 	log "filesystem detection on $resource:"
 	if tune2fs -l $partition 1>&2; then
 		# we found an ext2/3/4 partition. but is it real ?
@@ -174,10 +198,10 @@ detect_fs_on()
 
 detect_all_filesystems()
 {
-	system_fs=`detect_fs_on system $system_partition`
-	dbdata_fs=`detect_fs_on dbdata $dbdata_partition`
-	cache_fs=`detect_fs_on cache $cache_partition`
-	data_fs=`detect_fs_on data $data_partition`
+	system_fs=`detect_fs_on system`
+	dbdata_fs=`detect_fs_on dbdata`
+	cache_fs=`detect_fs_on cache`
+	data_fs=`detect_fs_on data`
 }
 
 
@@ -205,7 +229,7 @@ say()
 	# sound system lazy loader
 	if load_soundsystem; then 
 		# play !
-		madplay -A -4 -o wave:- "/voodoo/voices/$1.mp3" | \
+		madplay -A -4 -o wave:- "/voodoo/voices/$1.mp3" 2> /dev/null | \
 			 aplay -Dpcm.AndroidPlayback_Speaker --buffer-size=4096
 	fi
 }
@@ -219,10 +243,10 @@ load_soundsystem()
 	# cache the voices from the SD to the ram
 	# with a size limit to prevent filling memory security expoit
 	if ! test -d /voodoo/voices; then
-		if test -d $sdcard/Voodoo/resources/voices/; then
-			if test "`du -s $sdcard/Voodoo/resources/voices/ | cut -d \/ -f1`" -le 1024; then
+		if test -d /sdcard/Voodoo/resources/voices/; then
+			if test "`du -s /sdcard/Voodoo/resources/voices/ | cut -d \/ -f1`" -le 1024; then
 				# copy the voices (no cp command, use cat)
-				cp -r $sdcard/Voodoo/resources/voices /voodoo/
+				cp -r /sdcard/Voodoo/resources/voices /voodoo/
 				log "voices loaded"
 			else
 				log "ERROR: voice diretory strangely big"
@@ -267,7 +291,12 @@ verify_voodoo_install()
 
 in_recovery()
 {
-	test "`cut -d' ' -f 1 /proc/cmdline`" = "bootmode=2"
+	if test "`cut -d' ' -f 1 /proc/cmdline`" = "bootmode=2"; then
+		log_suffix='-recovery'
+		return 0
+	else
+		return 1
+	fi
 }
 
 
@@ -306,22 +335,49 @@ detect_cwm_recovery()
 }
 
 
-enough_space_to_convert()
+check_free_space()
 {
-	resource=$1
-	log "check space for $resource:" 1
+	log "check space availability for $resource:" 1
 	
 	# mount resource to check for space, except if it's system (already mounted)
 	test $resource != system && mount_ $resource
 
 	# read free space on internal SD
-	target_free=$((`df $sdcard | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
+	target_free=$((`df /sdcard | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
 
-	# read space used by data we need to save
+	# read space used by data we need to backup
 	space_needed=$((`df /$resource | cut -d' ' -f 4 | cut -d K -f 1` / 1024 ))
 
-	log "free space:   $target_free MB" 2
-	log "space needed: $space_needed MB" 2
+	# read space free on the partition we need to backup
+	space_free=$((`df /$resource | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
+
+	log "partition free space: $space_free MB" 2
+	log "space needed on SD:   $space_needed MB" 2
+	log "free space on SD:     $target_free MB" 2
+
+	# check if the Ext4 overhead let us enough space
+	if test $dest_fs = ext4; then
+		log "check Ext4 additionnal disk usage for $resource" 1
+		case $resource in
+			system)	overhead=7 ;;
+			data)	overhead=20 ;;
+			dbdata)	overhead=14 ;;
+			dbdata)	overhead=0 ;; # cache? don't care
+		esac
+
+		if test $space_free -lt $overhead; then
+			log "$resource partition space usage too high to convert to Ext4" 2
+			log "missing: "$(( $overhead - $space_free )) 2
+
+			if test $resource = system; then
+				log "disabling /system conversion by configuration"
+				disallow_system_conversion
+			fi
+			return 1
+		else
+			log "enough free space on /$resource to convert to Ext4" 2
+		fi
+	fi
 
 	# more than 100MB on /data, talk to the user
 	test $space_needed -gt 100 && say "wait"
@@ -339,7 +395,7 @@ rfs_format()
 	log "format $1 as RFS using Android init + a fake init.rc to run fat.format" 1
 	# communicate with the formatter script
 	echo "$1" > /voodoo/run/rfs_format_what
-	
+
 	# save real init .rc files
 	mv *.rc /voodoo/tmp/
 
@@ -348,7 +404,7 @@ rfs_format()
 	ln -s init.rc recovery.rc
 	ln -s init.rc fota.rc
 	ln -s init.rc lpm.rc
-	
+
 	# run init that will run the actual format script
 	/init_samsung
 	umount /dev/pts
@@ -403,17 +459,22 @@ copy_system_in_ram()
 convert()
 {
 	resource="$1"
-	partition="$2"
-	fs="$3"
-	dest_fs="$4"
+	dest_fs="$2"
 	
-	output_fs=$fs
+	# use global getters
+	get_partition_for $resource
+	get_fs_for $resource
 
-	if test $fs = $dest_fs; then
+	source_fs=$fs
+
+	if test $source_fs = $dest_fs; then
 		log "no need to convert $resource"
 		return
 	fi
-	log "convert $resource ($partition) from $fs to $dest_fs"
+	log "convert $resource ($partition) from $source_fs to $dest_fs"
+
+	# tag the log for easier analysis
+	test $resource != cache && test $resource != dbdata && log_suffix='-conversion'
 
 	# be sure fat.format is in PATH
 	if test "$dest_fs" = "rfs"; then
@@ -430,12 +491,16 @@ convert()
 		say "cancel-no-system"
 		return 1
 	fi
-	if ! enough_space_to_convert $resource; then
+
+	# check for free space in sd
+	if ! check_free_space $resource; then
 		log "ERROR: not enough space to convert $resource" 1
 		say "cancel-no-space"
 		return 1
 	fi
-	
+
+	# in case we convert /system to RFS, we need to keep a copy of
+	# some tools from here
 	if test "$dest_fs" = "rfs" && test "$resource" = "system"; then
 		copy_system_in_ram
 		# /system has been unmounted
@@ -451,14 +516,14 @@ convert()
 	fi
 
 	log_time start
-	if ! time tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ | cut -d/ -f4- \
+	if ! time tar cvf /sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ | cut -d/ -f4- \
 			| tee $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt > /dev/null; then
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "This error comes after an RFS filesystem has been mounted without the standard -o check=no" 1
-		if test $fs = rfs; then
+		if test $source_fs = rfs; then
 			log "Attempting a mount with broken RFS options" 1
 			mount -t rfs -o ro $partition /voodoo/tmp/mnt/
-			if ! tar cvf $sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ \
+			if ! tar cvf /sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ \
 				> $log_dir/"$resource"_backup_list_2.txt; then
 				log "Unable to save a correct backup: cancel conversion" 2
 				umount_tmp
@@ -474,41 +539,40 @@ convert()
 	log "format $partition" 1
 	if test "$dest_fs" = "rfs"; then
 		rfs_format $resource
-		output_fs=rfs
+		set_fs_for $resource rfs
 	else
 		test $resource = system && umount /system && remount_system=1
 		ext4_format
-		output_fs=ext4
+		set_fs_for $resource ext4
 	fi
 
 	log "restore $resource" 1
 	say "step2"
 
-	if test $output_fs = rfs && test $resource = system; then
-		log "reboot to avoid mount failure due to RFS driver bugs"
-		reboot -f
-	fi
-
 	if ! mount_tmp $partition; then
-		log "ERROR: unexpected issue, unable to mount $partition to restore the backup" 1
+		log "ERROR: unable to mount $partition to restore the backup" 1
+		log "this error is known to happens because of the RFS driver mount bug"
+		log "reboot and catch the error later"
 		umount_tmp
+		log_suffix='-RFS-bug-hit'
+		manage_logs
+		ensure_reboot
 		return 1
 	fi
 
 	log_time start
-	if ! time tar xvf $sdcard/voodoo_"$resource"_conversion.tar | cut -d/ -f4- \
+	if ! time tar xvf /sdcard/voodoo_"$resource"_conversion.tar | cut -d/ -f4- \
 			| tee $log_dir/"$resource"_to_"$dest_fs"_restore_list.txt >/dev/null; then
 		log "ERROR: problem during $resource restore" 1
 		umount_tmp
 		return 1
 	fi
 	log_time end
-	test "debug_mode" != 1 && rm $sdcard/voodoo_"$resource"_conversion.tar
+	test "debug_mode" != 1 && rm /sdcard/voodoo_"$resource"_conversion.tar
 
 	umount_tmp
 
 	# remount /system if needed
-	test $resource = system && system_fs=$output_fs
 	test "$remount_system" = 1 && mount_ system
 
 	# conversion is successful
@@ -517,47 +581,92 @@ convert()
 
 
 
-finalize_system_rfs_conversion()
+finalize_interrupted_rfs_conversion()
 {
-	# thanks to Mish for the idea
+	# thanks to Mish for the original reboot idea
 
-	min_system_size=20480
-	system_archive=$sdcard/voodoo_system_conversion.tar
-	
-	# check if the /system archive is there and is more than 20MB
-	if test -f $system_archive; then
+	min_size=500
+	was_finalized=0
 
-		# check if /sytem is empty (or at contains less than 20MB of data)
-		if test `du -s /system | cut -d/ -f1` -lt $min_system_size; then
-			log "finalize /system conversion to RFS: restore backup"
-			rm -rf /system/*
-			umount /system
+	asoundconf=/sdcard/Voodoo/asound.conf
+	test -f $asoundconf && cp $asoundconf /etc/
 
-			log_time start
-			mount_tmp $system_partition
-			if tar xvf $system_archive | cut -d/ -f4- \
-				| tee $log_dir/system_rfs_conversion_workaround_restore_list.txt >/dev/null; then
-			log_time end
-				log "/system backup restored, workaround successful" 1
-				rm $system_archive
+	for resource in dbdata data system; do
+		archive=/sdcard/voodoo_"$resource"_conversion.tar
+
+		# check if the /system archive is there and is more than 20MB
+		if test -f $archive; then
+
+			# /system is already mounted but not other resources
+			test $resource != system && mount_ $resource
+
+			# check if the resource partition is empty (or at contains less than $min_size of data)
+			if test `du -s /$resource | cut -d/ -f1` -lt $min_size; then
+				# we don't want watchdog rebooting on us here
+				echo -n V > /dev/watchdog
+
+				say 'success'
+
+				log "finalize /$resource conversion to RFS: restore backup"
+				rm -rf /$resource/*
+				umount /$resource
+
+				log_time start
+				mount_tmp $partition
+				if tar xvf $archive | cut -d/ -f4- \
+					| tee $log_dir/"$resource"_rfs_conversion_workaround_restore_list.txt >/dev/null; then
+				log_time end
+					log "/$resource backup restored, workaround successful" 1
+					rm $archive
+				else
+					mv $archive /sdcard/voodoo_"$archive"_conversion_failed_restore.tar
+					log "/$resource restore error, unrecoverable error" 1
+					log "attempt boot to recovery" 1
+					/system/bin/reboot recovery
+				fi
+				umount_tmp
+
+				test $resource = system && mount_ $resource
+				was_finalized=1
 			else
-				mv $system_archive $sdcard/voodoo_system_conversion_failed_restore.tar
-				log "/system backup error, unrecoverable error" 1
-				log "attempt boot to recovery" 1
-				/system/bin/reboot recovery
+				log "found a /$resource conversion temporary archive but the partition looks already okay"
+				log "/sdcard/voodoo_"$resource'_conversion.tar ignored'
+				test $debug_mode != 1 && rm $archive
 			fi
-			umount_tmp
-
-			mount_ system
-		else
-			log "found a /system temporary archive but it looks already okay"
-			log "$sdcard/voodoo_system_conversion.tar ignored"
-			test $debug_mode != 1 && rm $system_archive
 		fi
-	fi
+	done
 
+
+	# if we rebooted here using the watchdog's facility, we are maybe in reality
+	# in battery charging mode. As it is difficult to detect, lets just reboot
+	if test $was_finalized = 1; then
+		log "rebooting to the normal mode"
+		log_suffix='-RFS-bug-workaround'
+		manage_logs
+		ensure_reboot
+	fi
 }
 
+
+manage_logs()
+{
+	# Manage logs
+	# clean up old logs on sdcard (more than 7 days)
+	find /sdcard/Voodoo/logs/ -mtime +7 -delete
+
+	# manage the voodoo_history log
+	tail -n 1000 /sdcard/Voodoo/logs/voodoo_history_log.txt > /voodoo/logs/voodoo_history_log.txt
+	echo >> /voodoo/logs/voodoo_history_log.txt
+	cat /voodoo/logs/voodoo_history_log.txt /voodoo/logs/voodoo_log.txt > /sdcard/Voodoo/logs/voodoo_history_log.txt
+	# save current voodoo_log in the sdcard
+	cp /voodoo/logs/voodoo_log.txt $log_dir/
+
+	# manage other logs
+	cp $log_dir/* /voodoo/logs
+
+	current_log_directory=`date '+%Y-%m-%d_%H-%M-%S'`$log_suffix
+	mv $log_dir /sdcard/Voodoo/logs/$current_log_directory
+}
 
 
 letsgo()
@@ -592,26 +701,14 @@ letsgo()
 	fi
 
 	log "running init !"
-
-	# Manage logs
-	# clean up old logs on sdcard (more than 7 days)
-	find $sdcard/Voodoo/logs/ -mtime +7 -delete
-
-	# manage the voodoo_history log
-	tail -n 1000 $sdcard/Voodoo/logs/voodoo_history_log.txt > /voodoo/logs/voodoo_history_log.txt
-	echo >> /voodoo/logs/voodoo_history_log.txt
-	cat /voodoo/logs/voodoo_history_log.txt /voodoo/logs/voodoo_log.txt > $sdcard/Voodoo/logs/voodoo_history_log.txt
-	# save current voodoo_log in the sdcard
-	cp /voodoo/logs/voodoo_log.txt $log_dir/
-
-	# manage other logs
-	cp $log_dir/* /voodoo/logs
-
-	current_log_directory=boot-`date '+%Y-%m-%d_%H-%M-%S'`
-	mv $log_dir $sdcard/Voodoo/logs/$current_log_directory
 	
+	manage_logs
+
 	# remove voices from memory
 	rm -r /voodoo/voices
+
+	# boot successful, no need to keep asound.conf on the sdcard
+	rm /sdcard/Voodoo/asound.conf
 
 	# remove CWM setup files
 	rm -rf /cwm
@@ -627,4 +724,3 @@ letsgo()
 	# exit this main script (the runner will execute samsung_init )
 	exit
 }
-

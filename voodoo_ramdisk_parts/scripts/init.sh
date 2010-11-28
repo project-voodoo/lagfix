@@ -34,7 +34,7 @@
 ###############################################################################
 set -x
 
-PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/scripts:/system/bin
+PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/bin:/voodoo/scripts:/system/bin
 
 # load configs
 . /voodoo/configs/partitions
@@ -74,7 +74,7 @@ fi
 
 
 # read if the lagfix is enabled or not
-if test "`find $sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
+if test "`find /sdcard/Voodoo/ -iname 'disable*lagfix*'`" != "" ; then
 	lagfix_enabled=0
 	log "option: lagfix disabled"
 else
@@ -84,7 +84,7 @@ fi
 
 
 # read if the /system conversion is enabled ot not
-if test "`find $sdcard/Voodoo/ -iname 'don*t*convert*system*'`" != "" ; then
+if test "`find /sdcard/Voodoo/ -iname 'don*t*convert*system*'`" != "" ; then
 	system_conversion_enabled=0
 	log "option: lagfix won't convert /system"
 else
@@ -94,7 +94,7 @@ fi
 
 
 # debug mode detection
-if test "`find $sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test "$debug_mode" = 1 ; then
+if test "`find /sdcard/Voodoo/ -iname 'enable*debug*'`" != "" || test "$debug_mode" = 1 ; then
 	log "option: debug mode enabled"
 
 	# TODO : rewrite the same thing cleaner
@@ -125,13 +125,14 @@ mount_ system
 
 
 # workaround the terrible RFS mount bug:
-# check if there is a backup of /system and if /system looks empty
-finalize_system_rfs_conversion
+# check if there is a backup of a conversion interrupted by the terrible
+# rfs driver bug:
+finalize_interrupted_rfs_conversion
 
 
 # copy the sound configuration
 cp /system/etc/asound.conf /etc/asound.conf
-
+cp /system/etc/asound.conf /sdcard/Voodoo/
 
 # we will need these directories
 mkdir /cache 2> /dev/null
@@ -157,6 +158,7 @@ if in_recovery; then
 	# this append when you choose to wipe everything from the phone settings,
 	# or when you type *2767*3855# (Factory Reset, datas + SDs wipe)
 	if test "`echo $recovery_command | cut -d '-' -f 3`" = 'wipe_data'; then
+		log_suffix='-factory-reset'
 		log "MASTER_CLEAR mode"
 		say "factory-reset"
 		# if we are in this mode, we still have to wipe Ext4 partition start
@@ -164,8 +166,8 @@ if in_recovery; then
 
 		log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
 		silent=1
-		convert cache $cache_partition $cache_fs rfs && cache_fs=rfs
-		convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs
+		convert cache rfs
+		convert dbdata rfs
 		silent=0
 	
 		letsgo
@@ -183,10 +185,15 @@ if in_recovery; then
 			unzip -o /cache/update.zip -x META-INF/* -d /cwm
 		fi
 
+		# little help for sdcard mounting
+		echo -n /sdcard_device > /voodoo/run/sdcard_device
+
 		/voodoo/scripts/cwm_setup.sh
+		# setup the mount wrapper
 		ln -s /voodoo/scripts/mount_wrapper.sh /sbin/mount
 		> /voodoo/run/cwm_enabled
 
+		log_suffix='-CWM-recovery'
 		# don't run conversion process if booting into CWM recovery
 		letsgo
 	else
@@ -196,8 +203,8 @@ if in_recovery; then
 		rm -rf /cwm
 		log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
 		silent=1
-		convert cache $cache_partition $cache_fs rfs &&	cache_fs=rfs
-		convert dbdata $dbdata_partition $dbdata_fs rfs && dbdata_fs=rfs
+		convert cache rfs
+		convert dbdata rfs
 		silent=0
 	fi
 	
@@ -205,36 +212,28 @@ if in_recovery; then
 else
 	rm -rf /cwm
 fi
-rm -rf /cwm
-
 
 
 if test $lagfix_enabled = 1; then
 
 	if ! in_recovery; then
 		silent=1
-		convert cache $cache_partition $cache_fs ext4; cache_fs=$output_fs
-		convert dbdata $dbdata_partition $dbdata_fs ext4; dbdata_fs=$output_fs
+		convert cache ext4
+		convert dbdata ext4
 		silent=0
 	fi
-	convert data $data_partition $data_fs ext4; data_fs=$output_fs
-	if test $system_conversion_enabled = 1; then
-		convert system $system_partition $system_fs ext4
-		system_fs=$output_fs
-	fi
+	convert data ext4
+	test $system_conversion_enabled = 1 && convert system ext4
 
 	letsgo
 else
 
 	silent=1
-	convert cache $cache_partition $cache_fs rfs; cache_fs=$output_fs
-	convert dbdata $dbdata_partition $dbdata_fs rfs; dbdata_fs=$output_fs
+	convert cache rfs
+	convert dbdata rfs
 	silent=0
-	convert data $data_partition $data_fs rfs; data_fs=$output_fs
-	if test $system_conversion_enabled = 1; then
-		convert system $system_partition $system_fs rfs
-		system_fs=$output_fs
-	fi
+	convert data rfs
+	test $system_conversion_enabled = 1 && convert system rfs
 	
 	letsgo
 fi

@@ -17,6 +17,6 @@ if test -x $zip; then
 	fi
 
 else
-	log "ERROR: apk_cleaner cannot do its job. zip binary missing"
+	log "ERROR: apk_cleaner cannot do its job. zip binary is missing"
 	log "please contact your Voodoo lagfix kernel vendor to notify this error"
 fi
