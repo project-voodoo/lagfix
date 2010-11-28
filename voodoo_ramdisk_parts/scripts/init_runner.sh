@@ -29,7 +29,7 @@ while test $sdcard_is_mounted = 0; do
 		sdcard_dev=/dev/block/mmcblk0p1	# every other Galaxy S
 	fi
 
-	mount -t vfat -o utf8 $sdcard_dev /sdcard && sdcard_is_mounted=1 || wait=1
+	mount -t vfat -o utf8,errors=continue $sdcard_dev /sdcard && sdcard_is_mounted=1 || wait=1
 done
 
 # save the logs written during unfinished boots
