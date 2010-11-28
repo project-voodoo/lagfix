@@ -520,14 +520,14 @@ convert()
 
 	log_time start
 	if ! time tar cvf $archive /voodoo/tmp/mnt/ | cut -d/ -f4- \
-			| tee $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt > /dev/null; then
+			> $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt
 		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
 		log "This error comes after an RFS filesystem has been mounted without the standard -o check=no" 1
 		if test $source_fs = rfs; then
 			log "Attempting a mount with broken RFS options" 1
 			mount -t rfs -o ro $partition /voodoo/tmp/mnt/
 			if ! tar cvf /sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ \
-				> $log_dir/"$resource"_backup_list_2.txt; then
+					> $log_dir/"$resource"_backup_list_2.txt; then
 				log "Unable to save a correct backup: cancel conversion" 2
 				umount_tmp
 				return 1
@@ -565,7 +565,7 @@ convert()
 
 	log_time start
 	if ! time tar xvf $archive | cut -d/ -f4- \
-			| tee $log_dir/"$resource"_to_"$dest_fs"_restore_list.txt >/dev/null; then
+			> $log_dir/"$resource"_to_"$dest_fs"_restore_list.txt >/dev/null; then
 		log "ERROR: problem during $resource restore" 1
 		umount_tmp
 		return 1
@@ -617,8 +617,8 @@ finalize_interrupted_rfs_conversion()
 				log_time start
 				mount_tmp $partition
 				if tar xvf $archive | cut -d/ -f4- \
-					| tee $log_dir/"$resource"_rfs_conversion_workaround_restore_list.txt >/dev/null; then
-				log_time end
+						> $log_dir/"$resource"_rfs_conversion_workaround_restore_list.txt; then
+					log_time end
 					log "/$resource backup restored, workaround successful" 1
 					rm $archive
 				else
