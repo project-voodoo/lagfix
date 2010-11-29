@@ -590,9 +590,9 @@ convert()
 
 	# deal with archive file
 	if test $debug_mode = 1; then
-		rm $archive
-	else
 		mv $archive $archive_saved
+	else
+		rm $archive
 	fi
 
 	umount_tmp
