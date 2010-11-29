@@ -73,7 +73,7 @@ log_time()
 			start=`date '+%s'` ;;
 		end)
 			end=`date '+%s'`
-			log 'time spent: '$(( $end - $start ))' s' 2 ;;
+			log 'time spent: '$(( $end - $start ))' s' 1 ;;
 	esac
 }
 
@@ -351,8 +351,8 @@ check_free_space()
 	# read space free on the partition we need to backup
 	space_free=$((`df /$resource | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
 
-	log "used:             $space_free MB" 2
-	log "available:        $space_needed MB" 2
+	log "available:        $space_free MB" 2
+	log "used:             $space_needed MB" 2
 	log "sdcard available: $target_free MB" 2
 
 	# check if the Ext4 overhead let us enough space
@@ -385,8 +385,8 @@ check_free_space()
 	# umount the resource if it's not /system
 	test "$resource" != "system" && umount /$resource
 
-	# ask for 10% more free space for security reasons
-	test $target_free -ge $(( $space_needed + $space_needed / 10))
+	# ask for 1% more free space for security reasons
+	test $target_free -ge $(( $space_needed + $space_needed / 100))
 }
 
 
@@ -456,6 +456,20 @@ copy_system_in_ram()
 }
 
 
+
+build_archive()
+{
+	time tar cv /voodoo/tmp/mnt/ 2> $log_dir/"$1"_list.txt \
+		| lzop | dd bs=$(( 4096 * 512 )) of=$archive
+}
+
+
+extract_archive()
+{
+	time dd if=$archive bs=$(( 4096 * 512 )) | lzopcat | tar xv > $log_dir/"$1"_list.txt
+}
+
+
 convert()
 {
 	resource="$1"
@@ -473,8 +487,8 @@ convert()
 	fi
 	log "convert $resource ($partition) from $source_fs to $dest_fs"
 
-	archive=/sdcard/voodoo_"$resource"_conversion.tar
-	archive_saved=/sdcard/voodoo_"$resource"_conversion_saved.tar
+	archive=/sdcard/voodoo_"$resource"_conversion.tar.lzo
+	archive_saved=/sdcard/voodoo_"$resource"_conversion_saved.tar.lzo
 	rm -f $archive $archive_saved
 
 	# tag the log for easier analysis
@@ -520,14 +534,15 @@ convert()
 	fi
 
 	log_time start
-	if ! time tar cv /voodoo/tmp/mnt/ 2> $log_dir/"$resource"_to_"$dest_fs"_backup_list.txt | dd bs=$(( 4096 * 1024 )) | dd of=$archive bs=$(( 4096 * 1024 )); then
-		log "ERROR: problem during $resource backup, the filesystem must be corrupted" 1
+	# archive management
+	if ! build_archive "$resource"_to_"$dest_fs"_backup; then
+		log "ERROR: problem during $resource backup, the filesystem must be corrupt" 1
 		log "This error comes after an RFS filesystem has been mounted without the standard -o check=no" 1
 		if test $source_fs = rfs; then
 			log "Attempting a mount with broken RFS options" 1
+			# archive management
 			mount -t rfs -o ro $partition /voodoo/tmp/mnt/
-			if ! tar cvf /sdcard/voodoo_"$resource"_conversion.tar /voodoo/tmp/mnt/ \
-					> $log_dir/"$resource"_backup_list_2.txt; then
+			if ! build_archive "$resource"_to_"$dest_fs"_backup_nocheckno; then
 				log "Unable to save a correct backup: cancel conversion" 2
 				umount_tmp
 				return 1
@@ -565,8 +580,8 @@ convert()
 	fi
 
 	log_time start
-	if ! dd if=$archive bs=$(( 4096 * 1024 )) | dd bs=$(( 4096 * 1024 )) | time tar xv | cut -d/ -f4- \
-			> $log_dir/"$resource"_to_"$dest_fs"_restore_list.txt >/dev/null; then
+	# archive management
+	if ! extract_archive "$resource"_to_"$dest_fs"_restore; then
 		log "ERROR: problem during $resource restore" 1
 		umount_tmp
 		return 1
@@ -602,8 +617,8 @@ finalize_interrupted_rfs_conversion()
 	test -f $asoundconf && cp $asoundconf /etc/
 
 	for resource in dbdata data system; do
-		archive=/sdcard/voodoo_"$resource"_conversion.tar
-		archive_ignored=/sdcard/voodoo_"$resource"_conversion_ignored.tar
+		archive=/sdcard/voodoo_"$resource"_conversion.tar.lzo
+		archive_ignored=/sdcard/voodoo_"$resource"_conversion_ignored.tar.lzo
 
 		# check if the /system archive is there and is more than 20MB
 		if test -f $archive; then
@@ -624,13 +639,13 @@ finalize_interrupted_rfs_conversion()
 
 				log_time start
 				mount_tmp $partition
-				if dd if=$archive bs=$(( 4096 * 1024 )) | dd bs=$(( 4096 * 1024 )) | tar xv | cut -d/ -f4- \
-						> $log_dir/"$resource"_rfs_conversion_workaround_restore_list.txt; then
+				# archive management
+				if extract_archive "$resource"_rfs_conversion_workaround_restore; then
 					log_time end
 					log "/$resource backup restored, workaround successful" 1
 					rm $archive
 				else
-					mv $archive /sdcard/voodoo_"$archive"_conversion_failed_restore.tar
+					mv $archive /sdcard/voodoo_"$archive"_conversion_failed_restore.tar.lzo
 					log "/$resource restore error, unrecoverable error" 1
 					log "attempt boot to recovery" 1
 					/system/bin/reboot recovery
@@ -641,7 +656,7 @@ finalize_interrupted_rfs_conversion()
 				was_finalized=1
 			else
 				log "found a /$resource conversion temporary archive but the partition looks already okay"
-				log "/sdcard/voodoo_"$resource'_conversion.tar ignored'
+				log "/sdcard/voodoo_"$resource'_conversion.tar.lzo ignored'
 				if $debug_mode = 1; then
 					mv $archive $archive_ignored
 				else
@@ -690,7 +705,6 @@ letsgo()
 	test $cache_fs = ext4 && mount_ cache && > /voodoo/run/lagfix_enabled
 	test $dbdata_fs = ext4 && mount_ dbdata && > /voodoo/run/lagfix_enabled
 	test $data_fs = ext4 && mount_ data && > /voodoo/run/lagfix_enabled
-	test $system_fs = ext4 && > /voodoo/run/lagfix_enabled
 
 	# free ram
 	rm -rf /system_in_ram
