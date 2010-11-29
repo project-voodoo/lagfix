@@ -8,10 +8,12 @@ if test -x $zip; then
 
 	# clean apk's inside!
 	apk='/system/app/TouchWiz30Launcher.apk'
+	apk_tmp='/voodoo/tmp/TouchWiz30Launcher.apk'
 	if test -f $apk; then
 		if test `du -s $apk | cut -d/ -f1` -gt 1500 ; then
-			$zip -d $apk res/*1024x600*
-			$zipalign -v -f 4 $apk
+			cp $apk $apk_tmp
+			$zip -d $apk_tmp res/*1024x600*
+			$zipalign -v -f 4 $apk_tmp $apk
 			log "TouchWiz 3.0 Launcher cleaned up: apk now optimized"
 		else
 			log "TouchWiz 3.0 Launcher already optimized"
