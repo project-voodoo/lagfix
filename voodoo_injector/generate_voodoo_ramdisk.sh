@@ -224,7 +224,7 @@ done
 # copy the uncompressed ramdisk to the compressed before decompressing
 # stage images in it
 cd ..
-! test $only_uncompressed = 1 && cp -a uncompressed compressed
+! test "$only_uncompressed" = 1 && cp -a uncompressed compressed
 
 
 # do the uncompressed one
@@ -266,7 +266,7 @@ chmod 755 init
 mv voodoo/root/bin .
 
 rm -r voodoo/voices
-stage0_list="lib/ sbin/ voodoo/ res/ modules/ *.rc init_samsung default.prop"
+stage0_list="lib/ sbin/ voodoo/ cwm/ res/ modules/ *.rc init_samsung default.prop"
 find $stage0_list 2>/dev/null | xargs tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
 rm -r $stage0_list
 cd ..
