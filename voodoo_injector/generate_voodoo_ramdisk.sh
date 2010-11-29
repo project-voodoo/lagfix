@@ -244,7 +244,7 @@ cd ..
 
 make_cpio uncompressed
 
-if test $only_uncompressed = 1; then
+if test "$only_uncompressed" = 1; then
 	echo "Building only uncompressed ramdisk"
 	exit
 fi
