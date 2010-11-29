@@ -47,14 +47,6 @@ PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/bin:/voodoo/scripts:/system/bin
 # debug_mode=1
 
 
-# STAGE 1
-# insmod required filesystem modules
-insmod /lib/modules/fsr.ko
-insmod /lib/modules/fsr_stl.ko
-insmod /lib/modules/rfs_glue.ko
-insmod /lib/modules/rfs_fat.ko
-
-
 # insmod Ext4 modules for injected ramdisks without Ext4 driver builtin
 test -f /lib/modules/jbd2.ko && insmod /lib/modules/jbd2.ko
 test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
