@@ -6,4 +6,4 @@ How to:
 
 ./scripts/download_extract_and_patch_zip.sh
 ./scripts/build.sh
-./install_in_extensions.sh
+./scripts/install_in_extensions.sh
