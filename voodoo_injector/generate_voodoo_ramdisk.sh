@@ -177,7 +177,6 @@ give_bootanimation_choice
 
 # run-parts support
 add_run_parts init.rc
-add_run_parts recovery.rc
 
 # optimize CWM directory if it's there
 optimize_cwm_directory
