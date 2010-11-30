@@ -473,7 +473,7 @@ build_archive()
 
 extract_archive()
 {
-	time dd if=$archive bs=$(( 4096 * 512 )) | lzopcat | tar xv > $log_dir/"$1"_list.txt
+	time dd if=$archive bs=$(( 4096 * 512 )) | lzopcat | tar xv > $log_dir/"$1"_list.txt 2>&1
 }
 
 
