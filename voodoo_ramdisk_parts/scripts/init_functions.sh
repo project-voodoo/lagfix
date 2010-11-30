@@ -459,6 +459,7 @@ copy_system_in_ram()
 
 build_archive()
 {
+	rm -rf /voodoo/tmp/mnt/lost+found
 	time tar cv /voodoo/tmp/mnt/ 2> $log_dir/"$1"_list.txt \
 		| lzop | dd bs=$(( 4096 * 512 )) of=$archive
 }
