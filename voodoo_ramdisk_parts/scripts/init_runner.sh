@@ -47,9 +47,11 @@ repair_sdcard_vfat()
 
 # mount the sdcard for Galaxy S and Fascinate
 # detect Fascinate
+# jt1134 idea: limit to 5s the sdcard mount wait
 sdcard_is_mounted=0
 wait=0
-while test $sdcard_is_mounted = 0; do
+mount_attemps=5
+while test $sdcard_is_mounted = 0 && test $mount_attemps -gt 0; do
 	sleep $wait
 
 	if test "`cat /sys/block/mmcblk0/size`" = 3907584; then
@@ -60,8 +62,12 @@ while test $sdcard_is_mounted = 0; do
 
 	repair_sdcard_vfat
 	mount -t vfat -o utf8,errors=continue $sdcard_dev /sdcard && sdcard_is_mounted=1 || wait=1
+
+	mount_attemps=$(( $mount_attemps - 1 ))
 done
 
+# save the real status of the sdcard mount: if it's not, we won't proceed to conversions later
+! test $sdcard_is_mounted = 1 && > /voodoo/run/no_sdcard
 
 # save the logs written during unfinished boots
 mv $log_dir /sdcard/Voodoo/logs/boot-`date '+%Y-%m-%d_%H-%M-%S'`-error 2>/dev/null
