@@ -7,6 +7,8 @@ mknod /dev/zero c 1 5
 mknod /dev/urandom c 1 9
 
 # internal & external SD
+mkdir /dev/block
+
 mknod /dev/block/mmcblk0 b 179 0
 mknod /dev/block/mmcblk0p1 b 179 1
 mknod /dev/block/mmcblk0p2 b 179 2
@@ -28,6 +30,8 @@ mknod /dev/block/stl11 b 138 11
 mknod /dev/block/stl12 b 138 12
 
 # soundcard
+mkdir /dev/snd
+
 mknod /dev/snd/controlC0 c 116 0
 mknod /dev/snd/controlC1 c 116 32
 mknod /dev/snd/pcmC0D0c c 116 24
