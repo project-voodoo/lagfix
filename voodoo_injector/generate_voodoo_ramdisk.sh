@@ -126,6 +126,16 @@ tune_fs_options()
 }
 
 
+give_bootanimation_choice()
+{
+	# remove playslogo from init.rc, Voodoo lagfix boot script will make
+	# start playslogo or bootanimation depending on what's on the phone
+	cat init.rc | \
+	sed s/"service playlogos1.*"/"service playlogos-disabled \/system\/bin\/false"/ > /tmp/init.rc
+	cp /tmp/init.rc init.rc
+}
+
+
 # save the original running path
 run_pwd=$PWD
 
@@ -162,6 +172,9 @@ change_memory_management_settings
 # vfs settings
 tune_fs_options
 
+# please :)
+give_bootanimation_choice
+
 # run-parts support
 add_run_parts init.rc
 add_run_parts recovery.rc
@@ -183,8 +196,6 @@ mkdir dev 2>/dev/null
 mkdir proc 2>/dev/null
 mkdir sys 2>/dev/null
 mkdir system 2>/dev/null
-mkdir dev/block
-mkdir dev/snd
 mkdir voodoo/tmp
 mkdir voodoo/tmp/sdcard
 mkdir voodoo/tmp/mnt

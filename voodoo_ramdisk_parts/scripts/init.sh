@@ -152,15 +152,12 @@ if in_recovery; then
 	if test "`echo $recovery_command | cut -d '-' -f 3`" = 'wipe_data'; then
 		log_suffix='-factory-reset'
 		log "MASTER_CLEAR mode"
-		say "factory-reset"
 		# if we are in this mode, we still have to wipe Ext4 partition start
 		rfs_format data
 
 		log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
-		silent=1
 		convert cache rfs
 		convert dbdata rfs
-		silent=0
 	
 		letsgo
 	fi
@@ -209,10 +206,8 @@ fi
 if test $lagfix_enabled = 1; then
 
 	if ! in_recovery; then
-		silent=1
 		convert cache ext4
 		convert dbdata ext4
-		silent=0
 	fi
 	convert data ext4
 	test $system_conversion_enabled = 1 && convert system ext4
@@ -220,10 +215,8 @@ if test $lagfix_enabled = 1; then
 	letsgo
 else
 
-	silent=1
 	convert cache rfs
 	convert dbdata rfs
-	silent=0
 	convert data rfs
 	test $system_conversion_enabled = 1 && convert system rfs
 	

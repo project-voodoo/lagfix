@@ -43,7 +43,11 @@ mount_()
 
 	if test "$fs" = "ext4"; then
 		e2fsck -p $partition
-		test $1 = cache && ext4_data_options=',data=writeback'
+		if test $1 = cache; then
+			ext4_data_options=',data=writeback'
+		else
+			ext4_data_options=''
+		fi
 		# mount as Ext4
 		mount -t ext4 -o noatime,barrier=0$ext4_data_options$ext4_options $partition /$1
 	else
@@ -229,7 +233,7 @@ say()
 	# sound system lazy loader
 	if load_soundsystem; then 
 		# play !
-		madplay -A -3 -o wave:- "/voodoo/voices/$1.mp3" 2> /dev/null | \
+		madplay -A -4 -o wave:- "/voodoo/voices/$1.mp3" 2> /dev/null | \
 			 aplay -Dpcm.AndroidPlayback_Speaker --buffer-size=4096
 	fi
 }
@@ -335,7 +339,7 @@ detect_cwm_recovery()
 }
 
 
-check_free_space()
+check_available_space()
 {
 	log "check space availability for $resource:" 1
 	
@@ -343,17 +347,17 @@ check_free_space()
 	test $resource != system && mount_ $resource
 
 	# read free space on internal SD
-	target_free=$((`df /sdcard | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
+	sdcard_available=$((`df /sdcard | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
 
 	# read space used by data we need to backup
-	space_needed=$((`df /$resource | cut -d' ' -f 4 | cut -d K -f 1` / 1024 ))
+	resource_used=$((`df /$resource | cut -d' ' -f 4 | cut -d K -f 1` / 1024 ))
 
 	# read space free on the partition we need to backup
-	space_free=$((`df /$resource | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
+	resource_available=$((`df /$resource | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
 
-	log "available:        $space_free MB" 2
-	log "used:             $space_needed MB" 2
-	log "sdcard available: $target_free MB" 2
+	log "available:        $resource_available MB" 2
+	log "used:             $resource_used MB" 2
+	log "sdcard available: $sdcard_available MB" 2
 
 	# check if the Ext4 overhead let us enough space
 	if test $dest_fs = ext4; then
@@ -365,28 +369,30 @@ check_free_space()
 			dbdata)	overhead=0 ;; # cache? don't care
 		esac
 
-		if test $space_free -lt $overhead; then
+		if test $resource_available -lt $overhead; then
 			log "$resource partition space usage too high to convert to Ext4" 2
-			log "missing: "$(( $overhead - $space_free )) 2
+			log "missing: "$(( $overhead - $resource_available )) 2
 
 			if test $resource = system; then
 				log "disabling /system conversion by configuration"
 				disallow_system_conversion
 			fi
-			return 1
+			available_space_error='partition'
+			return 2
 		else
 			log "enough free space on /$resource to convert to Ext4" 2
 		fi
 	fi
 
-	# more than 100MB on /data, talk to the user
-	test $space_needed -gt 100 && say "wait"
-
 	# umount the resource if it's not /system
 	test "$resource" != "system" && umount /$resource
 
 	# ask for 1% more free space for security reasons
-	test $target_free -ge $(( $space_needed + $space_needed / 100))
+	if ! test $sdcard_available -ge $(( $resource_used + $resource_used / 100)); then
+		available_space_error='sdcard'
+		return 1
+	fi
+	return 0
 }
 
 
@@ -475,6 +481,7 @@ convert()
 {
 	resource="$1"
 	dest_fs="$2"
+	test conversion_happened = '' && conversion_happened=0
 	
 	# use global getters
 	get_partition_for $resource
@@ -486,6 +493,13 @@ convert()
 		log "no need to convert $resource"
 		return
 	fi
+
+	if test -f /voodoo/run/no_sdcard; then
+		# this can happens on Fascinate only
+		log "no SD Card is available, cannot proceed to conversion"
+		return 1
+	fi
+
 	log "convert $resource ($partition) from $source_fs to $dest_fs"
 
 	archive=/sdcard/voodoo_"$resource"_conversion.tar.lzo
@@ -493,7 +507,13 @@ convert()
 	rm -f $archive $archive_saved
 
 	# tag the log for easier analysis
-	test $resource != cache && test $resource != dbdata && log_suffix='-conversion'
+	if test $resource = cache || test $resource = dbdata; then
+		silent=1
+	else
+		log_suffix='-conversion'
+		silent=0
+		say "convert-$resource"
+	fi
 
 	# be sure fat.format is in PATH
 	if test "$dest_fs" = "rfs"; then
@@ -507,15 +527,54 @@ convert()
 	# make sure df is there or cancel conversion
 	if ! df > /dev/null 2>&1 ; then
 		log "ERROR: unable to call the df command from system, cancel conversion" 1
-		say "cancel-no-system"
+		say "no-system"
 		return 1
 	fi
 
 	# check for free space in sd
-	if ! check_free_space $resource; then
-		log "ERROR: not enough space to convert $resource" 1
-		say "cancel-no-space"
+	if ! check_available_space $resource; then
+		case $available_space_error in
+			sdcard)
+				log "WARNING: not enough space on sdcard to convert $resource" 1
+				say "not-enough-space-sdcard"
+				;;
+			partition)
+				say "not-enough-space-partition"
+			;;
+		esac
+		log "$resource conversion cancelled" 1
 		return 1
+	else
+		say "time-estimated"
+		case $resource in
+			system)
+				# on small /system ROMS it takes less time, 2 minutes is a pessimistic prediction ;)
+				say "2-minutes" ;;
+			data)
+				if test $dest_fs = 'rfs'; then
+					# Converting to RFS takes a lot of time
+					# measured to 60MB converted by minute
+					( test $resource_used -gt 45 && test $resource_used -le 60 && say "1-minute" ) || \
+					( test $resource_used -gt 60 && test $resource_used -le 120 && say "2-minutes"  ) || \
+					( test $resource_used -gt 120 && test $resource_used -le 180 && say "3-minutes" ) || \
+					( test $resource_used -gt 180 && test $resource_used -le 240 && say "4-minutes" ) || \
+					( test $resource_used -gt 240 && test $resource_used -le 300 && say "5-minutes" ) || \
+					( test $resource_used -gt 300 && test $resource_used -le 600 && say "10-minutes" ) || \
+					( test $resource_used -gt 600 && test $resource_used -le 900 && say "15-minutes" ) || \
+					( test $resource_used -gt 900 && say "20-minutes+" )
+				else
+					# Converting to Ext4 takes less time
+					# measured to 104MB converted by minute
+					( test $resource_used -gt 75 && test $resource_used -le 104 && say "1-minute" ) || \
+					( test $resource_used -gt 104 && test $resource_used -le 208 && say "2-minutes"  ) || \
+					( test $resource_used -gt 208 && test $resource_used -le 312 && say "3-minutes" ) || \
+					( test $resource_used -gt 312 && test $resource_used -le 416 && say "4-minutes" ) || \
+					( test $resource_used -gt 416 && test $resource_used -le 520 && say "5-minutes" ) || \
+					( test $resource_used -gt 520 && test $resource_used -le 1040 && say "10-minutes" ) || \
+					( test $resource_used -gt 1040 && test $resource_used -le 1560 && say "15-minutes" ) || \
+					( test $resource_used -gt 1560 && say "20-minutes+" )
+				fi ;;
+		esac
 	fi
 
 	# in case we convert /system to RFS, we need to keep a copy of
@@ -527,7 +586,7 @@ convert()
 	fi
 
 	log "backup $resource" 1
-	say "step1"
+	say "backup"
 
 	if ! mount_tmp $partition; then
 		log "ERROR: unable to mount $partition" 1
@@ -566,7 +625,7 @@ convert()
 	fi
 
 	log "restore $resource" 1
-	say "step2"
+	say 'restore'
 
 	if ! mount_tmp $partition; then
 		log "ERROR: unable to mount $partition to restore the backup" 1
@@ -601,6 +660,8 @@ convert()
 	# remount /system if needed
 	test "$remount_system" = 1 && mount_ system
 
+	conversion_happened=1
+
 	# conversion is successful
 	return 0
 }
@@ -632,7 +693,7 @@ finalize_interrupted_rfs_conversion()
 				# we don't want watchdog rebooting on us here
 				echo -n V > /dev/watchdog
 
-				say 'success'
+				say 'restore'
 
 				log "finalize /$resource conversion to RFS: restore backup"
 				rm -rf /$resource/*
@@ -700,15 +761,39 @@ manage_logs()
 }
 
 
+readd_boot_animation()
+{
+	echo >> init.rc
+	if test -f /data/local/bootanimation.zip || test -f /system/media/bootanimation.zip; then
+		echo 'service bootanim /system/bin/bootanimation
+			user graphics
+			group graphics
+			disabled
+			oneshot' >> init.rc
+	else
+		echo 'service playlogos1 /system/bin/playlogos1
+			user root
+			oneshot' >> init.rc
+	fi
+}
+
+
 letsgo()
 {
+	# free ram
+	rm -rf /system_in_ram
+
+	# deal with the boot animation
+	mount_ data
+	readd_boot_animation
+	umount /data
+
 	# mount Ext4 partitions
 	test $cache_fs = ext4 && mount_ cache && > /voodoo/run/lagfix_enabled
 	test $dbdata_fs = ext4 && mount_ dbdata && > /voodoo/run/lagfix_enabled
 	test $data_fs = ext4 && mount_ data && > /voodoo/run/lagfix_enabled
 
-	# free ram
-	rm -rf /system_in_ram
+	test "$conversion_happened" = 1 && say "lagfix-status-"$lagfix_enabled
 
 	# remove the tarball in maximum compression mode
 	rm -f compressed_voodoo_ramdisk.tar.lzma
@@ -731,7 +816,8 @@ letsgo()
 	fi
 
 	log "running init !"
-	
+
+	#readd_boot_animation
 	manage_logs
 
 	# remove voices from memory

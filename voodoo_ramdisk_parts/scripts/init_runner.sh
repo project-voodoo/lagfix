@@ -2,7 +2,7 @@
 # logger / runner for Voodoo init script
 exec > /voodoo/logs/init_runner_log.txt 2>&1
 
-echo "\nHello Voodoo:"
+echo "Hello Voodoo:\n"
 
 PATH=/bin:/sbin:/voodoo/scripts
 # load configs
