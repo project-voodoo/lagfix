@@ -545,15 +545,17 @@ convert()
 		log "$resource conversion cancelled" 1
 		return 1
 	else
-		say "time-estimated"
 		case $resource in
 			system)
 				# on small /system ROMS it takes less time, 2 minutes is a pessimistic prediction ;)
+				say "time-estimated"
 				say "2-minutes" ;;
 			data)
 				if test $dest_fs = 'rfs'; then
 					# Converting to RFS takes a lot of time
 					# measured to 60MB converted by minute
+					test $resource_used -gt 45 && say "time-estimated"
+
 					( test $resource_used -gt 45 && test $resource_used -le 60 && say "1-minute" ) || \
 					( test $resource_used -gt 60 && test $resource_used -le 120 && say "2-minutes"  ) || \
 					( test $resource_used -gt 120 && test $resource_used -le 180 && say "3-minutes" ) || \
@@ -565,6 +567,8 @@ convert()
 				else
 					# Converting to Ext4 takes less time
 					# measured to 104MB converted by minute
+					test $resource_used -gt 75 && say "time-estimated"
+
 					( test $resource_used -gt 75 && test $resource_used -le 104 && say "1-minute" ) || \
 					( test $resource_used -gt 104 && test $resource_used -le 208 && say "2-minutes"  ) || \
 					( test $resource_used -gt 208 && test $resource_used -le 312 && say "3-minutes" ) || \
