@@ -233,7 +233,7 @@ say()
 	# sound system lazy loader
 	if load_soundsystem; then 
 		# play !
-		madplay -A -4 -o wave:- "/voodoo/voices/$1.mp3" 2> /dev/null | \
+		madplay -A -3 -o wave:- "/voodoo/voices/$1.mp3" 2> /dev/null | \
 			 aplay -Dpcm.AndroidPlayback_Speaker --buffer-size=4096
 	fi
 }
@@ -481,7 +481,7 @@ convert()
 {
 	resource="$1"
 	dest_fs="$2"
-	test conversion_happened = '' && conversion_happened=0
+	test tell_conversion_happened = '' && tell_conversion_happened=0
 	
 	# use global getters
 	get_partition_for $resource
@@ -664,7 +664,8 @@ convert()
 	# remount /system if needed
 	test "$remount_system" = 1 && mount_ system
 
-	conversion_happened=1
+	# speak only for bigger partition conversions
+	test $resource != cache && test $resource != dbdata && tell_conversion_happened=1
 
 	# conversion is successful
 	return 0
@@ -797,7 +798,7 @@ letsgo()
 	test $dbdata_fs = ext4 && mount_ dbdata && > /voodoo/run/lagfix_enabled
 	test $data_fs = ext4 && mount_ data && > /voodoo/run/lagfix_enabled
 
-	test "$conversion_happened" = 1 && say "lagfix-status-"$lagfix_enabled
+	test "$tell_conversion_happened" = 1 && say "lagfix-status-"$lagfix_enabled
 
 	# remove the tarball in maximum compression mode
 	rm -f compressed_voodoo_ramdisk.tar.lzma
