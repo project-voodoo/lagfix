@@ -10,7 +10,7 @@ if test -x $zip; then
 	apk='/system/app/TouchWiz30Launcher.apk'
 	apk_tmp='/voodoo/tmp/TouchWiz30Launcher.apk'
 	if test -f $apk; then
-		if test `du -s $apk | cut -d/ -f1` -gt 1500 ; then
+		if test `du -s $apk | cut -d/ -f1` -gt 1600 ; then
 			cp $apk $apk_tmp
 			$zip -d $apk_tmp res/*1024x600*
 			$zipalign -v -f 4 $apk_tmp $apk
