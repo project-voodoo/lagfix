@@ -649,7 +649,7 @@ convert()
 	log_time end
 
 	# deal with archive file
-	if test $debug_mode = 1; then
+	if test "$debug_mode" = 1; then
 		mv $archive $archive_saved
 	else
 		rm $archive
