@@ -366,7 +366,7 @@ check_available_space()
 			system)	overhead=7 ;;
 			data)	overhead=20 ;;
 			dbdata)	overhead=14 ;;
-			dbdata)	overhead=0 ;; # cache? don't care
+			cache)	overhead=0 ;; # cache? don't care
 		esac
 
 		if test $resource_available -lt $overhead; then
