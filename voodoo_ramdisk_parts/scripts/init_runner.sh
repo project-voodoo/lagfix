@@ -36,7 +36,7 @@ mkdir /sdcard
 # dirty tentative to repair broken vfat on sdcard
 repair_sdcard_vfat()
 {
-	if mount -t rfs -o ro $system_partition /system || mount -t ext4 -o ro $system_partition /system; then
+	if mount -t rfs -o ro $system_partition /system 2>/dev/null || mount -t ext4 -o ro $system_partition /system; then
 		/system/bin/fsck_msdos -y $sdcard_dev
 		# sometimes it takes 2 attemps
 		/system/bin/fsck_msdos -y $sdcard_dev
