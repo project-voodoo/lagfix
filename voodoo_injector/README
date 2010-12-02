@@ -1,0 +1,8 @@
+usage: generate_voodoo_ramdisk.sh
+	-s ramdisk_source_directory
+	-d voodoo_ramdisks_output_directory
+	-p voodoo_ramdisk_parts_directory
+	-x voodoo_lagfix_extensions_directory
+	-t stages_source_directory
+	[-u] : build only the uncompressed version ramdisk
+
