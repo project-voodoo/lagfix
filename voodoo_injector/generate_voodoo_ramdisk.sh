@@ -113,12 +113,12 @@ change_memory_management_settings()
 	sed 's/SECONDARY_SERVER_MEM.*/SECONDARY_SERVER_MEM 6144/' | \
 	sed 's/BACKUP_APP_MEM.*/BACKUP_APP_MEM 6144/' | \
 	sed 's/HOME_APP_MEM.*/HOME_APP_MEM 6144/' | \
-	sed 's/HIDDEN_APP_MEM.*/HIDDEN_APP_MEM 12288/' | \
+	sed 's/HIDDEN_APP_MEM.*/HIDDEN_APP_MEM 10240/' | \
 	sed 's/CONTENT_PROVIDER_MEM.*/CONTENT_PROVIDER_MEM 13312/' | \
 	sed 's/EMPTY_APP_MEM.*/EMPTY_APP_MEM 16384/' > /tmp/init.rc
 
 	cat /tmp/init.rc | \
-	sed 's/lowmemorykiller\/parameters\/minfree 2560,4096,6144,10240,11264,12288/lowmemorykiller\/parameters\/minfree 2560,4096,6144,12288,13312,16384/' > init.rc
+	sed 's/lowmemorykiller\/parameters\/minfree 2560,4096,6144,10240,11264,12288/lowmemorykiller\/parameters\/minfree 2560,4096,6144,10240,13312,16384/' > init.rc
 }
 
 
