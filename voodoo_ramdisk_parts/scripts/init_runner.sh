@@ -10,6 +10,15 @@ PATH=/bin:/sbin:/voodoo/scripts
 . /voodoo/configs/shared
 
 
+# stupid anti-boot-glitch with froyo kernels
+# remove a file present in the ramdisk for the only purpose to prevent
+# the infamous screen glitch appearing at some zImage or ramdisk size
+# this is only a harmless workaround
+# how to create such a file: dd if=/dev/zero of=anti_glitch bs=1024 count=1024
+# in your ramdisk
+rm -f anti_boot_glitch
+
+
 # create used devices nodes
 create_devices.sh
 
