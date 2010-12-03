@@ -89,7 +89,10 @@ ensure_reboot()
 	# loosely using the watchdog device which is supposed
 	# to be managed by a watchdog daemonq
 	echo 0 > /dev/watchdog
-	# trigger reboot with the standard method
+	# ask to reboot without sync() after a delay of 5s
+	/bin/reboot -d 5 -n&
+	# trigger reboot with the standard method, may fail when sync() stall
+	# because of the RFS driver mount bug
 	/bin/reboot -f
 }
 
@@ -363,9 +366,9 @@ check_available_space()
 	if test $dest_fs = ext4; then
 		log "check Ext4 additionnal disk usage for $resource" 1
 		case $resource in
-			system)	overhead=7 ;;
+			system)	overhead=2 ;;
 			data)	overhead=20 ;;
-			dbdata)	overhead=14 ;;
+			dbdata)	overhead=10 ;;
 			cache)	overhead=0 ;; # cache? don't care
 		esac
 
@@ -425,14 +428,13 @@ rfs_format()
 
 ext4_format()
 {
-	if test $resource = "data"; then
-		journal_size=12
-		features='sparse_super,'
-	else
-		journal_size=4
-		features=''
-	fi
-	mkfs.ext4 -F -O "$features"^resize_inode -J size=$journal_size -T default $partition
+	common_mkfs_ext4_options='^resize_inode,^ext_attr,^huge_file'
+	case $resource in
+		system)	mkfs_options="-O $common_mkfs_ext4_options,^has_journal"  ;;
+		data)	mkfs_options="-O $common_mkfs_ext4_options -J size=12" ;;
+		*)	mkfs_options="-O $common_mkfs_ext4_options -J size=4" ;;
+	esac
+	mkfs.ext4 -F $mkfs_options -T default $partition
 	# force check the filesystem after 100 mounts or 100 days
 	tune2fs -c 100 -i 100d -m 0 $partition
 }
@@ -474,6 +476,32 @@ build_archive()
 extract_archive()
 {
 	time dd if=$archive bs=$(( 4096 * 512 )) | lzopcat | tar xv > $log_dir/"$1"_list.txt 2>&1
+}
+
+
+conversion_mount_and_restore()
+{
+	if ! mount_tmp $partition; then
+		log "ERROR: unable to mount $partition to restore the backup" 1
+		log "this error is known to happens because of the RFS driver mount bug"
+		log "reboot and catch the error later"
+		umount_tmp
+		log_suffix='-RFS-bug-hit'
+		manage_logs
+		ensure_reboot
+		# past here this code is supposed to be *never* executed
+		sleep 20
+		return 1
+	fi
+
+	log_time start
+	# archive management
+	if ! extract_archive "$resource"_to_"$dest_fs"_restore; then
+		log "ERROR: problem during $resource restore" 1
+		umount_tmp
+		return 1
+	fi
+	log_time end
 }
 
 
@@ -581,9 +609,9 @@ convert()
 		esac
 	fi
 
-	# in case we convert /system to RFS, we need to keep a copy of
-	# some tools from here
-	if test "$dest_fs" = "rfs" && test "$resource" = "system"; then
+	# in case we convert /system to RFS or we fallback to RFS due to missing
+	# available space in Ext4, we need to keep a copy of some tools from here
+	if test "$resource" = "system"; then
 		copy_system_in_ram
 		# /system has been unmounted
 		remount_system=1
@@ -631,26 +659,21 @@ convert()
 	log "restore $resource" 1
 	say 'restore'
 
-	if ! mount_tmp $partition; then
-		log "ERROR: unable to mount $partition to restore the backup" 1
-		log "this error is known to happens because of the RFS driver mount bug"
-		log "reboot and catch the error later"
-		umount_tmp
-		log_suffix='-RFS-bug-hit'
-		manage_logs
-		ensure_reboot
-		# past here this code is supposed to be never excecuted
-		return 1
-	fi
+	if ! conversion_mount_and_restore; then
+		# sometimes, despite the overhead calculation,
+		# restore operation don't succeed in Ext4 because RFS and Ext4
+		# are quite different in space usage in this case, let's
+		# re-format it as RFS as Ext4 don't give us enough space
+		disallow_system_conversion
+		rfs_format $resource
+		set_fs_for $resource rfs
+		if ! conversion_mount_and_restore; then
+			log "ERROR: sorry this one is unrecoverable, your /$resource may be incomplete"
+			return 1
+		fi
 
-	log_time start
-	# archive management
-	if ! extract_archive "$resource"_to_"$dest_fs"_restore; then
-		log "ERROR: problem during $resource restore" 1
-		umount_tmp
-		return 1
+		log "WARNING: $resource has been converted back to RFS due to insufficient space in Ext4 mode" 1
 	fi
-	log_time end
 
 	# deal with archive file
 	if test "$debug_mode" = 1; then
@@ -705,9 +728,8 @@ finalize_interrupted_rfs_conversion()
 				umount /$resource
 
 				log_time start
-				mount_tmp $partition
 				# archive management
-				if extract_archive "$resource"_rfs_conversion_workaround_restore; then
+				if mount_tmp $partition && extract_archive "$resource"_rfs_conversion_workaround_restore; then
 					log_time end
 					log "/$resource backup restored, workaround successful" 1
 					rm $archive
