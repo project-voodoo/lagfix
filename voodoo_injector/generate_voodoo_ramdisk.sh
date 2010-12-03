@@ -102,10 +102,8 @@ activate_adbd_wrapper()
 add_run_parts()
 {
 	rc_file=$1
-	echo -e "\nservice run-parts /voodoo/scripts/run-parts.sh /system/etc/init.d" >> $rc_file
+	echo -e "\nservice run_parts /voodoo/scripts/run-parts.sh /system/etc/init.d" >> $rc_file
 	echo -e "  oneshot \n" >> $rc_file
-
-	echo -e "start run-parts" >> $rc_file
 }
 
 
@@ -141,7 +139,7 @@ give_bootanimation_choice()
 	# remove playslogo from init.rc, Voodoo lagfix boot script will make
 	# start playslogo or bootanimation depending on what's on the phone
 	cat init.rc | \
-	sed 's/service playlogos1.*/service playlogos-disabled \/system\/bin\/false/' > /tmp/init.rc
+	sed 's/service playlogos1.*/service noplaylogos \/system\/bin\/false/' > /tmp/init.rc
 	cp /tmp/init.rc init.rc
 }
 
