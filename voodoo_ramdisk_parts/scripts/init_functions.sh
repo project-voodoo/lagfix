@@ -374,11 +374,11 @@ check_available_space()
 
 		if test $resource_available -lt $overhead; then
 			log "$resource partition space usage too high to convert to Ext4" 2
-			log "missing: "$(( $overhead - $resource_available )) 2
+			log "missing: "$(( $overhead - $resource_available ))' MB' 2
 
 			if test $resource = system; then
 				log "disabling /system conversion by configuration"
-				disallow_system_conversion
+				set_system_as_rfs
 			fi
 			available_space_error='partition'
 			return 2
@@ -664,7 +664,7 @@ convert()
 		# restore operation don't succeed in Ext4 because RFS and Ext4
 		# are quite different in space usage in this case, let's
 		# re-format it as RFS as Ext4 don't give us enough space
-		disallow_system_conversion
+		set_system_as_rfs
 		rfs_format $resource
 		set_fs_for $resource rfs
 		if ! conversion_mount_and_restore; then
