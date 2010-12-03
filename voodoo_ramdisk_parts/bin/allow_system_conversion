@@ -1,2 +1,0 @@
-#!/bin/sh
-/bin/find /sdcard/Voodoo/ -iname 'd*ont*convert*system*' -delete

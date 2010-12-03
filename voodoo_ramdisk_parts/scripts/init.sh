@@ -76,12 +76,12 @@ fi
 
 
 # read if the /system conversion is enabled ot not
-if test "`find /sdcard/Voodoo/ -iname 'don*t*convert*system*'`" != "" ; then
-	system_conversion_enabled=0
-	log "option: lagfix won't convert /system"
+if test "`find /sdcard/Voodoo/ -iname 'system*as*rfs*'`" != "" ; then
+	system_as_rfs=1
+	log "option: lagfix will keep /system as RFS"
 else
-	system_conversion_enabled=1
-	log "option: lagfix is allowed to convert /system"
+	system_as_rfs=0
+	log "option: lagfix is allowed to convert /system to Ext4"
 fi
 
 
@@ -131,6 +131,7 @@ finalize_interrupted_rfs_conversion
 # copy the sound configuration
 cp /system/etc/asound.conf /etc/asound.conf
 cp /system/etc/asound.conf /sdcard/Voodoo/
+
 
 # unpack myself : STAGE 2
 load_stage 2
@@ -210,7 +211,11 @@ if test $lagfix_enabled = 1; then
 		convert dbdata ext4
 	fi
 	convert data ext4
-	test $system_conversion_enabled = 1 && convert system ext4
+	if test $system_as_rfs = 0; then
+		convert system ext4
+	else
+		convert system rfs
+	fi
 
 	letsgo
 else
@@ -218,7 +223,7 @@ else
 	convert cache rfs
 	convert dbdata rfs
 	convert data rfs
-	test $system_conversion_enabled = 1 && convert system rfs
+	convert system rfs
 	
 	letsgo
 fi

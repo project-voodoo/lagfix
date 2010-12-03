@@ -1,0 +1,2 @@
+#!/bin/sh
+/bin/find /sdcard/Voodoo/ -iname 'system*as*rfs*' -delete
