@@ -7,18 +7,18 @@
 # use a standard ramdisk directory as input, and make it Voodoo!
 # recommanded to wipe the destination directory first
 #
-# usage: generate_voodoo_ramdisk.sh
-#	-s ramdisk_source_directory
-#	-d voodoo_ramdisks_output_directory
-#	-p voodoo_ramdisk_parts_directory
-#	-x voodoo_lagfix_extensions_directory
-#	-t stages_source_directory
-#	[-u] : build only the uncompressed version ramdisk
+# see README for usage
 
+echo -e "\nVoodoo ramdisk injector:\n"
+
+display_option()
+{
+	echo "Voodoo injector option: $1"
+}
 
 
 # parse options
-while getopts s:d:p:t:x:u opt
+while getopts "s:d:p:t:x: :uw" opt
 do
 	case "$opt" in
 		s) source=`readlink -f "$OPTARG"`;;
@@ -26,7 +26,8 @@ do
 		p) voodoo_ramdisk_parts=`readlink -f "$OPTARG"`;;
 		t) stages_source=`readlink -f "$OPTARG"`;;
 		x) extentions_source=`readlink -f "$OPTARG"`;;
-		u) only_uncompressed=1;;
+		u) only_uncompressed=1; display_option "build only the uncompressed ramdisk";;
+		w) no_remount_ro=1; display_option "no remount ro in init.rc";;
 		\?)
 			echo "help!!!"
 			exit 1
@@ -46,8 +47,7 @@ if ! test -n "$extentions_source" && ! test -d $extentions_source; then
 	echo "please specify a valid extension source directory"
 fi
 
-echo -e "\nVoodoo ramdisk injector:\n"
-echo "source ramdisk:		$source"
+echo -e "\nsource ramdisk:		$source"
 echo "voodoo ramdisk parts:	$voodoo_ramdisk_parts"
 echo "stages:			$stages_source"
 echo "extensions:		$extentions_source"
@@ -63,8 +63,6 @@ make_cpio()
 	cd - >/dev/null
 	echo 
 }
-
-
 
 
 optimize_cwm_directory()
@@ -196,7 +194,7 @@ add_run_parts init.rc
 optimize_cwm_directory
 
 # be sure /system will be remounted as ro in normal boot
-force_remount_system_ro
+test "$no_remount_ro" != 1 && force_remount_system_ro
 
 # copy ramdisk stuff
 cd $run_pwd || exit 1
