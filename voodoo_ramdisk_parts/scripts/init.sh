@@ -147,22 +147,6 @@ if in_recovery; then
 		log "recovery command: $recovery_command"
 	fi
 
-	# detect the MASTER_CLEAR intent command
-	# this append when you choose to wipe everything from the phone settings,
-	# or when you type *2767*3855# (Factory Reset, datas + SDs wipe)
-	if test "`echo $recovery_command | cut -d '-' -f 3`" = 'wipe_data'; then
-		log_suffix='-factory-reset'
-		log "MASTER_CLEAR mode"
-		# if we are in this mode, we still have to wipe Ext4 partition start
-		rfs_format data
-
-		log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
-		convert cache rfs
-		convert dbdata rfs
-	
-		letsgo
-	fi
-
 
 	if detect_cwm_recovery; then
 		log "CWM Recovery Mode"
