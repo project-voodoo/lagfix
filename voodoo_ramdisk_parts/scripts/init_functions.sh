@@ -49,7 +49,7 @@ mount_()
 			ext4_data_options=''
 		fi
 		# mount as Ext4
-		mount -t ext4 -o noatime,barrier=0$ext4_data_options$ext4_options $partition /$1
+		mount -t ext4 -o noatime,barrier=1$ext4_data_options$ext4_options $partition /$1
 	else
 		# mount as RFS with standard options
 		mount -t rfs -o nosuid,nodev,check=no $partition /$1
@@ -367,8 +367,8 @@ check_available_space()
 		log "check Ext4 additionnal disk usage for $resource" 1
 		case $resource in
 			system)	overhead=2 ;;
-			data)	overhead=20 ;;
-			dbdata)	overhead=10 ;;
+			data)	overhead=40 ;;
+			dbdata)	overhead=20 ;;
 			cache)	overhead=0 ;; # cache? don't care
 		esac
 
@@ -431,8 +431,9 @@ ext4_format()
 	common_mkfs_ext4_options='^resize_inode,^ext_attr,^huge_file'
 	case $resource in
 		system)	mkfs_options="-O $common_mkfs_ext4_options,^has_journal"  ;;
-		data)	mkfs_options="-O $common_mkfs_ext4_options -J size=12" ;;
-		*)	mkfs_options="-O $common_mkfs_ext4_options -J size=4" ;;
+		cache)	mkfs_options="-O $common_mkfs_ext4_options -J size=4"  ;;
+		data)	mkfs_options="-O $common_mkfs_ext4_options -J size=32" ;;
+		dbdata)	mkfs_options="-O $common_mkfs_ext4_options -J size=16" ;;
 	esac
 	mkfs.ext4 -F $mkfs_options -T default $partition
 	# force check the filesystem after 100 mounts or 100 days
