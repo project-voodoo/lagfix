@@ -18,7 +18,7 @@ display_option()
 
 
 # parse options
-while getopts "s:d:p:t:x: :uw" opt
+while getopts "s:d:p:t:x:c: :uw" opt
 do
 	case "$opt" in
 		s) source=`readlink -f "$OPTARG"`;;
@@ -26,6 +26,7 @@ do
 		p) voodoo_ramdisk_parts=`readlink -f "$OPTARG"`;;
 		t) stages_source=`readlink -f "$OPTARG"`;;
 		x) extentions_source=`readlink -f "$OPTARG"`;;
+		c) cwm_source=`readlink -f "$OPTARG"`;;
 		u) only_uncompressed=1; display_option "build only the uncompressed ramdisk";;
 		w) no_remount_ro=1; display_option "no remount ro in init.rc";;
 		\?)
@@ -47,11 +48,13 @@ if ! test -n "$extentions_source" && ! test -d $extentions_source; then
 	echo "please specify a valid extension source directory"
 fi
 
-echo -e "\nsource ramdisk:		$source"
-echo "voodoo ramdisk parts:	$voodoo_ramdisk_parts"
-echo "stages:			$stages_source"
-echo "extensions:		$extentions_source"
-echo -e "destination directory:	$dest\n"
+echo -e "\nsource ramdisk:			$source"
+echo "voodoo ramdisk parts:		$voodoo_ramdisk_parts"
+echo "stages:				$stages_source"
+echo "extensions:			$extentions_source"
+echo "destination directory:		$dest"
+test -n "$cwm_source" && cwm_infomessage=$cwm_source || cwm_infomessage='disabled'
+echo -e "optional integrated CWM:	$cwm_infomessage\n"
 
 
 make_cpio()
@@ -169,6 +172,10 @@ cd $dest/uncompressed || exit 1
 
 # save working dir
 working_dir=$PWD
+
+# copy the additional CWM source as integrated CWM
+mkdir -p cwm/
+test -n "$cwm_source" && cp -a $cwm_source/* cwm/
 
 mv init init_samsung
 
