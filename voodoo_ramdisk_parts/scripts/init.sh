@@ -169,12 +169,14 @@ if in_recovery; then
 
 		log_suffix='-CWM-recovery'
 		# don't run conversion process if booting into CWM recovery
+		umount /cache
 		letsgo
 	else
 		# stock recovery don't handle /cache or /dbdata in Ext4
 		# give them rfs filesystems
 
 		rm -rf /cwm
+		umount /cache
 		log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
 		silent=1
 		convert cache rfs
