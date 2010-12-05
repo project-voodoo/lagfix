@@ -43,13 +43,13 @@ mount_()
 
 	if test "$fs" = "ext4"; then
 		e2fsck -p $partition
-		if test $1 = cache; then
-			ext4_data_options=',data=writeback'
-		else
-			ext4_data_options=''
-		fi
+		case $1 in
+			cache)	ext4_data_options=',data=writeback' ;;
+			*)	ext4_data_options=',data=journal' ;;
+		esac
+
 		# mount as Ext4
-		mount -t ext4 -o noatime,barrier=1$ext4_data_options$ext4_options $partition /$1
+		mount -t ext4 -o noatime,barrier=0$ext4_data_options$ext4_options $partition /$1
 	else
 		# mount as RFS with standard options
 		mount -t rfs -o nosuid,nodev,check=no $partition /$1
