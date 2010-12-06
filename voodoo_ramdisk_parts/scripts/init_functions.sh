@@ -50,6 +50,7 @@ mount_()
 			# the journal option data=ordered and stay free from corruption
 			# even in worst cases
 			data)	ext4_data_options=',data=ordered,barrier=1' ;;
+			dbdata)	ext4_data_options=',data=ordered,nodelalloc' ;;
 			*)	ext4_data_options=',data=journal' ;;
 		esac
 
