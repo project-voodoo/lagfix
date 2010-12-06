@@ -178,10 +178,8 @@ if in_recovery; then
 		rm -rf /cwm
 		umount /cache
 		log "stock recovery compatibility: make DBDATA: and CACHE: standard RFS"
-		silent=1
 		convert cache rfs
 		convert dbdata rfs
-		silent=0
 	fi
 	
 	umount /cache
