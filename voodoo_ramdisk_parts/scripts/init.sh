@@ -60,6 +60,13 @@ ln -s /voodoo/root/etc etc
 if ! detect_supported_model_and_setup_partitions; then
 	# the hardware model is unknown
 	log "model not detected"
+
+	# configure all in RFS
+	system_fs='rfs'
+	data_fs='rfs'
+	dbdata_fs='rfs'
+	cache_fs='rfs'
+
 	# try to attempt a boot through the standard procedure
 	letsgo
 fi

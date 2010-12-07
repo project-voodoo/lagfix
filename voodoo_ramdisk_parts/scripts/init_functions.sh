@@ -167,7 +167,7 @@ detect_supported_model_and_setup_partitions()
 		fi
 	done
 
-	if test $model != ""; then 
+	if test "$model" != ""; then
 		log "model detected: $model"
 		
 		# fascinate is different here
@@ -840,11 +840,14 @@ letsgo()
 	# actually they are sourced so they can use the init functions,
 	# resources and variables
 	
-	if test "`find /voodoo/extensions/ -name '*.sh'`" != "" ; then
-		for x in /voodoo/extensions/*.sh; do
-			log "running extension: `echo $x | cut -d'/' -f 4`"
-			. "$x"
-		done
+	# run extensions only if the model is detected
+	if test -n "$model"; then
+		if test "`find /voodoo/extensions/ -name '*.sh'`" != "" ; then
+			for x in /voodoo/extensions/*.sh; do
+				log "running extension: `echo $x | cut -d'/' -f 4`"
+				. "$x"
+			done
+		fi
 	fi
 
 	log "running init !"
