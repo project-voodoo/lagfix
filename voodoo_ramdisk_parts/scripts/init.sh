@@ -47,11 +47,6 @@ PATH=/bin:/sbin:/usr/bin/:/usr/sbin:/voodoo/bin:/voodoo/scripts:/system/bin
 # debug_mode=1
 
 
-# insmod Ext4 modules for injected ramdisks without Ext4 driver builtin
-test -f /lib/modules/jbd2.ko && insmod /lib/modules/jbd2.ko
-test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
-
-
 # create the voodoo etc symlink, required for e2fsprogs, alsa..
 ln -s /voodoo/root/etc etc
 
