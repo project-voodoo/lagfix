@@ -3,4 +3,9 @@ This is Voodoo lagfix tools
 How to build it:
 
 1/ stages_builder
-2/ use voodoo_injector's generate_voodoo_ramdisk.sh
+2/ zip
+3/ use voodoo_injector's generate_voodoo_ramdisk.sh
+
+Extensions are optional.
+You can zap root installation, or the apk cleaner if appropriate :)
+BLN is recommanded for all systems.
