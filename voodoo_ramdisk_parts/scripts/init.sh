@@ -12,6 +12,7 @@
 #      o T-Mobile Vibrant                                                     #
 #      o AT&T Captivate                                                       #
 #      o Verizon Fascinate                                                    #
+#      o USCC Mesmerize                                                       #
 #                                                                             #
 #    Copyright Francois Simond 2010 (supercurio @ xda-developers)             #
 #       credits to gilsken for ideas and support                              #

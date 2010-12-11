@@ -59,8 +59,8 @@ repair_sdcard_vfat()
 }
 
 
-# mount the sdcard for Galaxy S and Fascinate
-# detect Fascinate
+# mount the sdcard for Galaxy S and Fascinate/Mesmerize
+# detect Fascinate/Mesmerize
 # jt1134 idea: limit to 5s the sdcard mount wait
 sdcard_is_mounted=0
 wait=0
@@ -69,7 +69,7 @@ while test $sdcard_is_mounted = 0 && test $mount_attemps -gt 0; do
 	sleep $wait
 
 	if test "`cat /sys/block/mmcblk0/size`" = 3907584; then
-		sdcard_dev=/dev/block/mmcblk1p1	# we are on fascinate
+		sdcard_dev=/dev/block/mmcblk1p1	# we are on fascinate/mesmerize
 	else
 		sdcard_dev=/dev/block/mmcblk0p1	# every other Galaxy S
 	fi

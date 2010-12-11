@@ -170,8 +170,8 @@ detect_supported_model_and_setup_partitions()
 	if test "$model" != ""; then
 		log "model detected: $model"
 		
-		# fascinate is different here
-		if test "$model" = 'fascinate'; then
+		# fascinate/mesmerize is different here
+		if test "$model" = 'fascinate' || test "$model" = 'mesmerize'; then
 			data_partition='/dev/block/mmcblk0p1'
 			sdcard_device='/dev/block/mmcblk1p1'
 		else
@@ -526,7 +526,7 @@ convert()
 	fi
 
 	if test -f /voodoo/run/no_sdcard; then
-		# this can happens on Fascinate only
+		# this can happens on Fascinate/Mesmerize only
 		log "no SD Card is available, cannot proceed to conversion"
 		return 1
 	fi
