@@ -549,7 +549,8 @@ convert()
 	# be sure fat.format is in PATH
 	if test "$dest_fs" = "rfs"; then
 		fat.format > /dev/null 2>&1
-		if test "$?" = 127; then
+		returncode=$?
+		if test "$returncode" = 127 || test "$returncode" = 126 ; then
 			log "ERROR: unable to call fat.format: cancel conversion" 1
 			return 1
 		fi
