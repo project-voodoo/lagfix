@@ -531,6 +531,16 @@ convert()
 		return 1
 	fi
 
+	# read the battery level
+	battery_level=`cat /sys/devices/platform/jupiter-battery/power_supply/battery/capacity`
+	log "battery level: $battery_level%"
+
+	if test "$battery_level" -lt 10 && test $resource != cache && test $resource != dbdata; then
+		log "battery level too low for /$resource conversion"
+		say "low-battery"
+		return 1
+	fi
+
 	log "convert $resource ($partition) from $source_fs to $dest_fs"
 
 	archive=/sdcard/voodoo_"$resource"_conversion.tar.lzo
