@@ -379,13 +379,12 @@ build_profile()
 }
 
 # default behavior, build full-uncompressed if no option is specified
-if	test $profile_full_uncompressed != 1 && \
-	test $profile_full_lzma_loader != 1 && \
-	test $profile_stages_compressed != 1 && \
-	test $profile_no_stages_lzma_loader != 1; then
+if	test "$profile_full_uncompressed" != 1 && \
+	test "$profile_full_lzma_loader" != 1 && \
+	test "$profile_stages_compressed" != 1 && \
+	test "$profile_no_stages_lzma_loader" != 1; then
 
 	profile_full_uncompressed=1
-
 fi
 
 
