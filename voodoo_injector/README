@@ -5,6 +5,9 @@ usage: generate_voodoo_ramdisk.sh
 	-x voodoo_lagfix_extensions_directory
 	-t stages_source_directory
 	[-c] : optional integrated CWM source directory
-	[-u] : build only the uncompressed version ramdisk
+	[-u] : build full uncompressed ramdisk
+	[-l] : build full lzma-compressed ramdisk
+	[-m] : build lzma compressed ramdisk without stage3 and sdcard voices
+	[-n] : build semi compressed ramdisks with some stages and sdcard voices
 	[-w] : don't ensure remount as read-only for /system in init.rc
 

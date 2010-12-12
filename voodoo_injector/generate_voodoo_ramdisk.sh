@@ -8,7 +8,6 @@
 # recommanded to wipe the destination directory first
 #
 # see README for usage
-
 echo -e "\nVoodoo ramdisk injector:\n"
 
 display_option()
@@ -18,7 +17,7 @@ display_option()
 
 
 # parse options
-while getopts "s:d:p:t:x:c: :uw" opt
+while getopts "s:d:p:t:x:c: :u :l :n :m :w" opt
 do
 	case "$opt" in
 		s) source=`readlink -f "$OPTARG"`;;
@@ -27,7 +26,10 @@ do
 		t) stages_source=`readlink -f "$OPTARG"`;;
 		x) extentions_source=`readlink -f "$OPTARG"`;;
 		c) cwm_source=`readlink -f "$OPTARG"`;;
-		u) only_uncompressed=1; display_option "build only the uncompressed ramdisk";;
+		u) profile_full_uncompressed=1;;
+		l) profile_full_lzma_loader=1;;
+		m) profile_stages_compressed=1;;
+		n) profile_no_stages_lzma_loader=1;;
 		w) no_remount_ro=1; display_option "no remount ro in init.rc";;
 		\?)
 			echo "help!!!"
@@ -59,10 +61,10 @@ echo -e "optional integrated CWM:	$cwm_infomessage\n"
 
 make_cpio()
 {
-	echo "creating a cpio for $1"
 	cd $1 || exit "error during stage cpio file creation"
-	find | fakeroot cpio -H newc -o > ../$1.cpio
-	ls -lh ../$1.cpio
+	find | fakeroot cpio -H newc -o > ../$1.cpio 2>/dev/null
+	gzip -9 -c ../$1.cpio > ../$1.cpio.gz
+	du -sh `readlink -f ../$1.cpio`*
 	cd - >/dev/null
 	echo 
 }
@@ -153,11 +155,46 @@ force_remount_system_ro()
 	cp /tmp/init.rc init.rc
 }
 
+
+
+
+
+# internal functions
+
+write_lzma_loader()
+{
+	rm init
+	echo '#!/bin/sh
+export PATH=/bin
+
+lzcat compressed_voodoo_ramdisk.tar.lzma | tar x
+exec /voodoo/scripts/init_runner.sh' > init
+	chmod 755 init
+
+}
+
+extract_stages_in_ramdisk()
+{
+	# extract stages directly
+	for y in $stages_source/*.lzma; do
+		lzcat "$y" | tar x
+		> voodoo/run/`basename "$y" .tar.lzma`_loaded
+	done
+}
+
+transform_to_zlma()
+{
+	stage0_list="lib/ sbin/ voodoo/ cwm/ res/ modules/ *.rc init_samsung default.prop"
+	find $stage0_list 2>/dev/null | xargs tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
+	rm -r $stage0_list
+}
+
+
 # save the original running path
 run_pwd=$PWD
 
 # create the destination directory
-mkdir -p $dest 2>/dev/null
+mkdir -p $dest/sdcard-resources
 
 # test if stage2 and at least stage3-sound exist
 # FIXME: paths madness
@@ -167,15 +204,21 @@ if ! test -f $stages_source/stage2* || ! test -f $stages_source/stage3-sound*; t
 fi
 
 # copy the ramdisk source to the voodoo ramdisk directory
-cp -ax $source $dest/uncompressed
-cd $dest/uncompressed || exit 1
+cp -ax $source $dest/reference
+cd $dest/reference || exit 1
 
 # save working dir
 working_dir=$PWD
 
 # copy the additional CWM source as integrated CWM
-mkdir -p cwm/
-test -n "$cwm_source" && cp -a $cwm_source/* cwm/
+if test -n "$cwm_source"; then
+	mkdir -p cwm/
+	cp -a $cwm_source/* cwm/
+	optimize_cwm_directory
+
+	# optimize & clean CWM directory
+	optimize_cwm_directory
+fi
 
 mv init init_samsung
 
@@ -196,9 +239,6 @@ give_bootanimation_choice
 
 # run-parts support
 add_run_parts init.rc
-
-# optimize CWM directory if it's there
-optimize_cwm_directory
 
 # be sure /system will be remounted as ro in normal boot
 test "$no_remount_ro" != 1 && force_remount_system_ro
@@ -243,7 +283,7 @@ tar xf $stages_source/stage1.tar
 
 
 # clean git stuff
-find -name '.git*' -exec rm {} \;
+find -name '.git*' -delete;
 
 
 # generate signatures for the stage
@@ -251,78 +291,109 @@ find -name '.git*' -exec rm {} \;
 for x in $stages_source/*.lzma; do
 	sha1sum "$x" | cut -d' ' -f1 >> voodoo/signatures/`basename "$x" .tar.lzma`	
 done
+cd ..
+
+build_profile()
+{
+	profile=$1
+	case $profile in
+		full-uncompressed)
+			# do the uncompressed one
+			if ! test -d $profile && cp -a reference $profile && cd $profile; then
+				echo "Build $profile ramdisk"
+				extract_stages_in_ramdisk
+				# remove the etc symlink wich will causes problems when we boot
+				# directly on samsung_init
+				rm etc
+				cd ..
+
+				make_cpio $profile
+			else
+				return 1
+			fi
+		;;
 
 
-# copy the uncompressed ramdisk to the compressed before decompressing
-# stage images in it
-cd .. || exit 1
-! test "$only_uncompressed" = 1 && cp -a uncompressed compressed
+		full-lzma-loader)
+			# do the smallest one. this one is wickely compressed!
+			if ! test -d $profile && cp -a reference $profile && cd $profile; then
+				echo "Build $profile ramdisk"
+
+				extract_stages_in_ramdisk
+				# remove the etc symlink wich will causes problems when we boot
+				# directly on samsung_init
+				rm etc
+
+				write_lzma_loader
+				transform_to_zlma
+
+				cd ..
+				make_cpio $profile
+			else
+				return 1
+			fi
+		;;
 
 
-# do the uncompressed one
-# extract stages directly
-echo "Build the uncompressed ramdisk"
-cd uncompressed || exit 1
-for x in $stages_source/*.lzma; do
-	lzcat "$x" | tar x
-	> voodoo/run/`basename "$x" .tar.lzma`_loaded
-done
+		no-stages-lzma-loader)
+			# do the smallest one. this one is wickely compressed!
+			if ! test -d $profile && cp -a reference $profile && cd $profile; then
+				echo "Build $profile ramdisk"
+				mv voodoo/voices ../sdcard-resources/ 2>/dev/null
+				cp -a $stages_source/*.lzma ../sdcard-resources/
+				rm etc
+				transform_to_zlma
+				cd ..
+
+				make_cpio $profile
+			else
+				return 1
+			fi
+		;;
 
 
-# remove the etc symlink wich will causes problems when we boot
-# directly on samsung_init
-rm etc
-cd .. || exit 1
+		stages-compressed)
+			# do the compressed one
+			if ! test -d $profile && cp -a reference $profile && cd $profile; then
+				echo "Build $profile ramdisk"
+				cp -a $stages_source/*.lzma voodoo/
+				mv voodoo/voices ../sdcard-resources/ 2>/dev/null
+				# important: remove the etc symlink in the end
+				rm etc
+				cd ..
 
-make_cpio uncompressed
+				make_cpio $profile
+			fi
 
-if test "$only_uncompressed" = 1; then
-	echo "Building only uncompressed ramdisk"
-	exit
+			if cp -a stages-compressed stage2only-compressed; then
+				echo "Build $profile-stage2only ramdisk"
+				mv stage2only-compressed/voodoo/stage3* sdcard-resources/
+
+				make_cpio stage2only-compressed
+			else
+				return 1
+			fi
+		;;
+
+	esac
+}
+
+# default behavior, build full-uncompressed if no option is specified
+if	test $profile_full_uncompressed != 1 && \
+	test $profile_full_lzma_loader != 1 && \
+	test $profile_stages_compressed != 1 && \
+	test $profile_no_stages_lzma_loader != 1; then
+
+	profile_full_uncompressed=1
+
 fi
 
 
-# do the smallest one. this one is wickely compressed!
-echo "Build the compressed-smallest ramdisk"
-cp -a uncompressed compressed-smallest
-cd compressed-smallest || exit 1
-rm voodoo/run/*
-rm bin
-rm init
-echo '#!/bin/sh
-export PATH=/bin
+test "$profile_full_uncompressed" = 1 && build_profile full-uncompressed
+test "$profile_full_lzma_loader" = 1 && ( build_profile full-uncompressed ; build_profile full-lzma-loader )
+test "$profile_no_stages_lzma_loader" = 1 && build_profile no-stages-lzma-loader
+test "$profile_stages_compressed" = 1 && build_profile stages-compressed
 
-lzcat compressed_voodoo_ramdisk.tar.lzma | tar x
-exec /voodoo/scripts/init_runner.sh' > init
-chmod 755 init
-mv voodoo/root/bin .
-
-rm -r voodoo/voices
-stage0_list="lib/ sbin/ voodoo/ cwm/ res/ modules/ *.rc init_samsung default.prop"
-find $stage0_list 2>/dev/null | xargs tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
-rm -r $stage0_list
-cd .. || exit 1
-
-make_cpio compressed-smallest
-
-
-# do the compressed one
-echo "Build the compressed ramdisk"
-cp -a $stages_source/*.lzma compressed/voodoo/
-cd compressed || exit 1
-rm -r voodoo/voices
-# important: remove the etc symlink
-rm etc
-cd .. || exit 1
-
-make_cpio compressed
-
-
-echo "Build the compressed-stage2-only"
-cp -a compressed compressed-stage2-only
-rm compressed-stage2-only/voodoo/stage3*
-
-make_cpio compressed-stage2-only
 
 
 echo
