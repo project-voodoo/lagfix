@@ -50,7 +50,7 @@ if ! test -n "$extentions_source" && ! test -d $extentions_source; then
 	echo "please specify a valid extension source directory"
 fi
 
-echo -e "\nsource initramfs:			$source"
+echo -e "\nsource initramfs:		$source"
 echo "voodoo initramfs parts:		$voodoo_initramfs_parts"
 echo "stages:				$stages_source"
 echo "extensions:			$extentions_source"
@@ -157,21 +157,7 @@ force_remount_system_ro()
 
 
 
-
-
 # internal functions
-
-write_lzma_loader()
-{
-	rm init
-	echo '#!/bin/sh
-export PATH=/bin
-
-lzcat compressed_voodoo_initramfs.tar.lzma | tar x
-exec /voodoo/scripts/init_runner.sh' > init
-	chmod 755 init
-
-}
 
 extract_stages_in_initramfs()
 {
@@ -184,9 +170,22 @@ extract_stages_in_initramfs()
 
 transform_to_zlma()
 {
-	stage0_list="lib/ sbin/ voodoo/ cwm/ res/ modules/ *.rc init_samsung default.prop"
-	find $stage0_list 2>/dev/null | xargs tar c | lzma -9 > compressed_voodoo_initramfs.tar.lzma
-	rm -r $stage0_list
+	rm bin init
+	mv voodoo/root/bin ..
+
+	tar c * | lzma -9 > ../compressed_voodoo_initramfs.tar.lzma
+
+	rm -r *
+	mv ../bin .
+	mv ../compressed_voodoo_initramfs.tar.lzma .
+
+	echo '#!/bin/sh
+export PATH=/bin
+
+lzcat compressed_voodoo_initramfs.tar.lzma | tar x
+rm compressed_voodoo_initramfs.tar.lzma
+exec /voodoo/scripts/init_runner.sh' > init
+	chmod 755 init
 }
 
 
@@ -318,16 +317,13 @@ build_profile()
 			# do the smallest one. this one is wickely compressed!
 			if ! test -d $profile && cp -a reference $profile && cd $profile; then
 				echo "Build $profile initramfs"
-
 				extract_stages_in_initramfs
 				# remove the etc symlink wich will causes problems when we boot
 				# directly on samsung_init
 				rm etc
-
-				write_lzma_loader
 				transform_to_zlma
-
 				cd ..
+
 				make_cpio $profile
 			else
 				return 1
