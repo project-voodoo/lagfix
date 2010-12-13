@@ -3,12 +3,12 @@
 # By François SIMOND for project-voodoo.org
 # License GPL v3
 #
-# generate 4 Voodoo ramdisks
-# use a standard ramdisk directory as input, and make it Voodoo!
+# generate 4 Voodoo initramfs
+# use a standard initramfs directory as input, and make it Voodoo!
 # recommanded to wipe the destination directory first
 #
 # see README for usage
-echo -e "\nVoodoo ramdisk injector:\n"
+echo -e "\nVoodoo initramfs injector:\n"
 
 display_option()
 {
@@ -22,7 +22,7 @@ do
 	case "$opt" in
 		s) source=`readlink -f "$OPTARG"`;;
 		d) dest=`readlink -f "$OPTARG"`;;
-		p) voodoo_ramdisk_parts=`readlink -f "$OPTARG"`;;
+		p) voodoo_initramfs_parts=`readlink -f "$OPTARG"`;;
 		t) stages_source=`readlink -f "$OPTARG"`;;
 		x) extentions_source=`readlink -f "$OPTARG"`;;
 		c) cwm_source=`readlink -f "$OPTARG"`;;
@@ -39,7 +39,7 @@ do
 done
 
 # check directories
-if ! test -d $voodoo_ramdisk_parts || \
+if ! test -d $voodoo_initramfs_parts || \
    ! test -n $dest || \
    ! test -d $source ; then
 	echo "please specify 3 valid directories names"
@@ -50,8 +50,8 @@ if ! test -n "$extentions_source" && ! test -d $extentions_source; then
 	echo "please specify a valid extension source directory"
 fi
 
-echo -e "\nsource ramdisk:			$source"
-echo "voodoo ramdisk parts:		$voodoo_ramdisk_parts"
+echo -e "\nsource initramfs:			$source"
+echo "voodoo initramfs parts:		$voodoo_initramfs_parts"
 echo "stages:				$stages_source"
 echo "extensions:			$extentions_source"
 echo "destination directory:		$dest"
@@ -167,13 +167,13 @@ write_lzma_loader()
 	echo '#!/bin/sh
 export PATH=/bin
 
-lzcat compressed_voodoo_ramdisk.tar.lzma | tar x
+lzcat compressed_voodoo_initramfs.tar.lzma | tar x
 exec /voodoo/scripts/init_runner.sh' > init
 	chmod 755 init
 
 }
 
-extract_stages_in_ramdisk()
+extract_stages_in_initramfs()
 {
 	# extract stages directly
 	for y in $stages_source/*.lzma; do
@@ -185,7 +185,7 @@ extract_stages_in_ramdisk()
 transform_to_zlma()
 {
 	stage0_list="lib/ sbin/ voodoo/ cwm/ res/ modules/ *.rc init_samsung default.prop"
-	find $stage0_list 2>/dev/null | xargs tar c | lzma -9 > compressed_voodoo_ramdisk.tar.lzma
+	find $stage0_list 2>/dev/null | xargs tar c | lzma -9 > compressed_voodoo_initramfs.tar.lzma
 	rm -r $stage0_list
 }
 
@@ -203,7 +203,7 @@ if ! test -f $stages_source/stage2* || ! test -f $stages_source/stage3-sound*; t
 	exit 1
 fi
 
-# copy the ramdisk source to the voodoo ramdisk directory
+# copy the initramfs source to the voodoo initramfs directory
 cp -ax $source $dest/reference
 cd $dest/reference || exit 1
 
@@ -243,9 +243,9 @@ add_run_parts init.rc
 # be sure /system will be remounted as ro in normal boot
 test "$no_remount_ro" != 1 && force_remount_system_ro
 
-# copy ramdisk stuff
+# copy initramfs stuff
 cd $run_pwd || exit 1
-cp -a $voodoo_ramdisk_parts $working_dir/voodoo
+cp -a $voodoo_initramfs_parts $working_dir/voodoo
 
 # copy the extensions in voodoo/
 test -n "$extentions_source" && cp -a $extentions_source $working_dir/voodoo/
@@ -300,8 +300,8 @@ build_profile()
 		full-uncompressed)
 			# do the uncompressed one
 			if ! test -d $profile && cp -a reference $profile && cd $profile; then
-				echo "Build $profile ramdisk"
-				extract_stages_in_ramdisk
+				echo "Build $profile initramfs"
+				extract_stages_in_initramfs
 				# remove the etc symlink wich will causes problems when we boot
 				# directly on samsung_init
 				rm etc
@@ -317,9 +317,9 @@ build_profile()
 		full-lzma-loader)
 			# do the smallest one. this one is wickely compressed!
 			if ! test -d $profile && cp -a reference $profile && cd $profile; then
-				echo "Build $profile ramdisk"
+				echo "Build $profile initramfs"
 
-				extract_stages_in_ramdisk
+				extract_stages_in_initramfs
 				# remove the etc symlink wich will causes problems when we boot
 				# directly on samsung_init
 				rm etc
@@ -338,7 +338,7 @@ build_profile()
 		no-stages-lzma-loader)
 			# do the smallest one. this one is wickely compressed!
 			if ! test -d $profile && cp -a reference $profile && cd $profile; then
-				echo "Build $profile ramdisk"
+				echo "Build $profile initramfs"
 				mv voodoo/voices ../sdcard-resources/ 2>/dev/null
 				cp -a $stages_source/*.lzma ../sdcard-resources/
 				rm etc
@@ -355,7 +355,7 @@ build_profile()
 		stages-compressed)
 			# do the compressed one
 			if ! test -d $profile && cp -a reference $profile && cd $profile; then
-				echo "Build $profile ramdisk"
+				echo "Build $profile initramfs"
 				cp -a $stages_source/*.lzma voodoo/
 				mv voodoo/voices ../sdcard-resources/ 2>/dev/null
 				# important: remove the etc symlink in the end
@@ -366,7 +366,7 @@ build_profile()
 			fi
 
 			if cp -a stages-compressed stage2only-compressed; then
-				echo "Build $profile-stage2only ramdisk"
+				echo "Build $profile-stage2only initramfs"
 				mv stage2only-compressed/voodoo/stage3* sdcard-resources/
 
 				make_cpio stage2only-compressed

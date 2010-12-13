@@ -11,11 +11,11 @@ PATH=/bin:/sbin:/voodoo/scripts
 
 
 # stupid anti-boot-glitch with froyo kernels
-# remove a file present in the ramdisk for the only purpose to prevent
-# the infamous screen glitch appearing at some zImage or ramdisk size
+# remove a file present in the initramfs for the only purpose to prevent
+# the infamous screen glitch appearing at some zImage or initramfs size
 # this is only a harmless workaround
 # how to create such a file: dd if=/dev/zero of=anti_glitch bs=1024 count=1024
-# in your ramdisk
+# in your initramfs
 rm -f anti_boot_glitch
 
 
@@ -35,7 +35,7 @@ insmod /lib/modules/rfs_glue.ko
 insmod /lib/modules/rfs_fat.ko
 
 
-# insmod Ext4 modules for injected ramdisks without Ext4 driver builtin
+# insmod Ext4 modules for injected initramfs without Ext4 driver builtin
 test -f /lib/modules/jbd2.ko && insmod /lib/modules/jbd2.ko
 test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
 

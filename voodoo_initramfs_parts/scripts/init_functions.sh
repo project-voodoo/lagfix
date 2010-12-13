@@ -113,7 +113,7 @@ load_stage()
 			2)
 				stagefile="/voodoo/stage2.tar.lzma"
 				if test -f $stagefile; then
-					# this stage is in ramdisk. no security check
+					# this stage is in initramfs. no security check
 					log "load stage2"
 					lzcat $stagefile | tar xv
 				else
@@ -122,10 +122,10 @@ load_stage()
 				;;
 			*)
 				# give the option to load without signature
-				# from the ramdisk itself
+				# from the initramfs itself
 				# useful for testing and when size don't matter
 				if test -f /voodoo/stage$1.tar.lzma; then
-					log "load stage $1 from ramdisk"
+					log "load stage $1 from initramfs"
 					lzcat /voodoo/stage$1.tar.lzma | tar xv
 				else
 
@@ -277,7 +277,7 @@ verify_voodoo_install()
 		test "$x" = "/sbin/fat.format" && prefix="/sbin" || prefix="/system/bin"
 		test -x "$prefix/fat.format" && log "manage fat.format in $prefix" || continue
 
-		# if the wrapper is not the same as the one in this ramdisk, we install it
+		# if the wrapper is not the same as the one in this initramfs, we install it
 		if ! cmp /voodoo/system_scripts/fat.format_wrapper.sh "$prefix/fat.format_wrapper.sh"; then
 			cp /voodoo/system_scripts/fat.format_wrapper.sh "$prefix/fat.format_wrapper.sh"
 			log "fat.format wrapper installed in $prefix"
@@ -326,7 +326,7 @@ detect_cwm_recovery()
 			fi
 	else
 		if test -d /cwm && test -f /cwm/sbin/recovery && test -f /cwm/sbin/adbd; then
-			# CWM is already present in this ramdisk
+			# CWM is already present in this initramfs
 			# run it only if we are not supposed to run other commands
 			# like CSC updates or OTAs
 			log "CWM recovery present in /cwm"
@@ -839,7 +839,7 @@ letsgo()
 	test "$tell_conversion_happened" = 1 && say "lagfix-status-"$lagfix_enabled
 
 	# remove the tarball in maximum compression mode
-	rm -f compressed_voodoo_ramdisk.tar.lzma
+	rm -f compressed_voodoo_initramfs.tar.lzma
 
 	verify_voodoo_install
 
@@ -877,7 +877,7 @@ letsgo()
 
 	# set the etc to Android standards
 	rm /etc
-	# on Froyo ramdisk, there is no etc to /etc/system symlink anymore
+	# on Froyo initramfs, there is no etc to /etc/system symlink anymore
 
 	if test "$system_fs" = "rfs"; then
 		umount /system

@@ -4,7 +4,7 @@ How to build it:
 
 1/ stages_builder
 2/ zip
-3/ use voodoo_injector's generate_voodoo_ramdisk.sh
+3/ use voodoo_injector's generate_voodoo_initramfs.sh
 
 Extensions are optional.
 You can zap root installation, or the apk cleaner if appropriate :)

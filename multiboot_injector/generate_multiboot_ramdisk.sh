@@ -3,11 +3,11 @@
 # By François SIMOND for project-voodoo.org
 # License GPL v3
 #
-# generate 4 Voodoo ramdisks
-# use a standard ramdisk directory as input, and make it Voodoo!
+# generate 4 Voodoo initramfs
+# use a standard initramfs directory as input, and make it Voodoo!
 # recommanded to wipe the destination directory first
 #
-# usage: generate_multiboot_ramdisk.sh stock_ramdisk multiboot_ramdisk
+# usage: generate_multiboot_initramfs.sh stock_initramfs multiboot_initramfs
 #
 
 make_cpio() {
@@ -32,7 +32,7 @@ my_pwd=`pwd`
 # create the destination directory
 mkdir $dest 2>/dev/null
 
-# copy the ramdisk source to the voodoo ramdisk directory
+# copy the initramfs source to the voodoo initramfs directory
 cp -ax $source $dest/uncompressed
 cd $dest/uncompressed
 
@@ -75,7 +75,7 @@ export PATH=/bin:/sbin
 mknod /dev/block/mmcblk1 b 179 8
 
 if mount -t vfat -o utf8,uid=1000,gid=1015 /dev/block/mmcblk1 /multiboot_external_sd; then
-		if tar xf /multiboot_external_sd/multiboot_ramdisk.tar; then
+		if tar xf /multiboot_external_sd/multiboot_initramfs.tar; then
 			test -x /pre-init.sh && /pre-init.sh
 			exec /init
 		else
@@ -95,6 +95,6 @@ chmod 755 init
 cd ..
 # do the uncompressed one
 # extract stages directly
-echo "Build the uncompressed ramdisk"
+echo "Build the uncompressed initramfs"
 
 make_cpio uncompressed
