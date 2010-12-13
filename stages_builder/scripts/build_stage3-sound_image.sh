@@ -5,14 +5,14 @@ DEST=$my_pwd"/stages/stage3-sound.tar.lzma"
 
 cd target
 
-tar cvf - \
-        usr/lib/libasound* \
-        usr/share/alsa/alsa.conf \
-        usr/bin/aplay \
-        usr/bin/madplay \
-        usr/lib/libmad* \
-        usr/lib/libid3* \
-        usr/lib/libz* \
-        | lzma -9  > $DEST
+tar cv \
+	usr/lib/libasound* \
+	usr/share/alsa/alsa.conf \
+	usr/bin/aplay \
+	usr/bin/madplay \
+	usr/lib/libmad* \
+	usr/lib/libid3* \
+	usr/lib/libz* \
+	| lzma -9  > $DEST
 
 ls -lh $DEST
