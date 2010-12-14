@@ -13,6 +13,7 @@
 #      o AT&T Captivate                                                       #
 #      o Verizon Fascinate                                                    #
 #      o USCC Mesmerize                                                       #
+#      o Cellular South Showcase                                              #
 #                                                                             #
 #    Copyright Francois Simond 2010 (supercurio @ xda-developers)             #
 #       credits to gilsken for ideas and support                              #
