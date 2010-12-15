@@ -265,6 +265,9 @@ mkdir voodoo/root/usr
 # symlink to voodoo stuff
 ln -s voodoo/root/bin .
 ln -s voodoo/root/usr .
+for x in `ls voodoo/root/sbin/* 2>/dev/null`; do
+	ln -sf ../"$x" sbin/
+done
 # etc symlink will be used only during extraction of stages
 # after that it needs to be removed
 rm -f etc
