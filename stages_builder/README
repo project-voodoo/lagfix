@@ -10,3 +10,12 @@ Have fun outside or if you have kids play with them
 (or just wait)
 
 And now your stages are fine :)
+
+
+NEW - Alternative method - Use precompiled stages!
+./scripts/download_precompiled_stages.sh
+
+Your stages should be fine too.
+If you have issues (missing binary) it means they are temporarly
+obsolete, don't hesitate to place an issue on github.
+In thea meantime you still can build from sources (always up-to-date)
