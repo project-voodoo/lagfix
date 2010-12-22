@@ -157,11 +157,11 @@ load_stage()
 
 detect_supported_model_and_setup_partitions()
 {
-	 # read the actual MBR
-	dd if=/dev/block/mmcblk0 of=/voodoo/tmp/original.mbr bs=512 count=1
+	# read the actual partition table
+	dd if=/dev/block/mmcblk0 of=/voodoo/tmp/partition_table bs=1 skip=446 count=64
 
-	for x in /voodoo/mbrs/* ; do
-		if cmp $x /voodoo/tmp/original.mbr; then
+	for x in /voodoo/partition_tables/* ; do
+		if cmp $x /voodoo/tmp/partition_table; then
 			model=`echo $x | /bin/cut -d \/ -f4`
 			break
 		fi

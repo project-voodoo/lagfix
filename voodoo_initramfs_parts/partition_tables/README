@@ -1,0 +1,3 @@
+How to extract the partition table:
+
+dd if=/dev/block/mmcblk0 of=partition_table bs=1 skip=446 count=64
