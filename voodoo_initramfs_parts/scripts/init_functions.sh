@@ -762,7 +762,7 @@ finalize_interrupted_rfs_conversion()
 			else
 				log "found a /$resource conversion temporary archive but the partition looks already okay"
 				log "/sdcard/voodoo_"$resource'_conversion.tar.lzo ignored'
-				if $debug_mode = 1; then
+				if test $debug_mode = 1; then
 					mv $archive $archive_ignored
 				else
 					rm $archive
