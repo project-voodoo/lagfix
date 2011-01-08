@@ -84,7 +84,7 @@ done
 ! test $sdcard_is_mounted = 1 && > /voodoo/run/no_sdcard
 
 # save the logs written during unfinished boots
-mv $log_dir /sdcard/Voodoo/logs/boot-`date '+%Y-%m-%d_%H-%M-%S'`-error 2>/dev/null
+mv $log_dir /sdcard/Voodoo/logs/`date '+%Y-%m-%d_%H-%M-%S'`-error 2>/dev/null
 
 mkdir -p $log_dir
 echo "\nRunning Voodoo init:"
