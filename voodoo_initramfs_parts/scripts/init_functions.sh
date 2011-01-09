@@ -4,10 +4,11 @@ get_partition_for()
 {
 	# resource partition getter which set a global variable named partition
 	case $1 in
-		cache)	partition=$cache_partition ;;
-		dbdata)	partition=$dbdata_partition ;;
-		data)	partition=$data_partition ;;
-		system)	partition=$system_partition ;;
+		cache)		partition=$cache_partition ;;
+		dbdata)		partition=$dbdata_partition ;;
+		datadata)	partition=$dbdata_partition ;;
+		data)		partition=$data_partition ;;
+		system)		partition=$system_partition ;;
 	esac
 }
 
@@ -16,10 +17,11 @@ get_fs_for()
 {
 	# resource filesystem getter which set a global variable named fs
 	case $1 in
-		cache)	fs=$cache_fs ;;
-		dbdata)	fs=$dbdata_fs ;;
-		data)	fs=$data_fs ;;
-		system)	fs=$system_fs ;;
+		cache)		fs=$cache_fs ;;
+		dbdata)		fs=$dbdata_fs ;;
+		datadata)	fs=$dbdata_fs ;;
+		data)		fs=$data_fs ;;
+		system)		fs=$system_fs ;;
 	esac
 }
 
@@ -821,6 +823,34 @@ readd_boot_animation()
 }
 
 
+get_cwm_fstab_mount_option_for()
+{
+	if test "$1" = "ext4"; then
+		cwm_mount_options='journal=ordered,nodelalloc'
+	else
+		cwm_mount_options='check=no'
+	fi
+}
+generate_cwm_fstab()
+{
+	for x in cache datadata data system; do
+		get_partition_for $x
+		get_fs_for $x
+		get_cwm_fstab_mount_option_for $fs
+		echo "$partition /$x $fs $cwm_mount_options" >> /voodoo/run/cwm.fstab
+		echo "/$x $fs $partition" >> /voodoo/run/cwm_recovery.fstab
+	done
+
+	# internal sdcard/USB Storage
+	echo "$sdcard_device /sdcard vfat rw,uid=1000,gid=1015,iocharset=iso8859-1,shortname=mixed,utf8" >> /voodoo/run/cwm.fstab
+	echo "/sdcard vfat $sdcard_device" >> /voodoo/run/cwm_recovery.fstab
+
+	# external sdcard/USB Storage
+	echo "/dev/block/mmcblk1 /sd-ext vfat rw,uid=1000,gid=1015,iocharset=iso8859-1,shortname=mixed,utf8" >> /voodoo/run/cwm.fstab
+	echo "/sd-ext vfat /dev/block/mmcblk1" >> /voodoo/run/cwm_recovery.fstab
+}
+
+
 letsgo()
 {
 	# free ram
@@ -835,6 +865,9 @@ letsgo()
 	test $cache_fs = ext4 && mount_ cache && > /voodoo/run/lagfix_enabled
 	test $dbdata_fs = ext4 && mount_ dbdata && > /voodoo/run/lagfix_enabled
 	test $data_fs = ext4 && mount_ data && > /voodoo/run/lagfix_enabled
+
+	# for CWM 3.x
+	generate_cwm_fstab
 
 	test "$tell_conversion_happened" = 1 && say "lagfix-status-"$lagfix_enabled
 
