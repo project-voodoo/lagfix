@@ -173,7 +173,7 @@ detect_supported_model_and_setup_partitions()
 		log "model detected: $model"
 		
 		# fascinate/mesmerize/showcase are different here
-		if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase'; then
+		if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum'; then
 			data_partition='/dev/block/mmcblk0p1'
 			sdcard_device='/dev/block/mmcblk1p1'
 		else
