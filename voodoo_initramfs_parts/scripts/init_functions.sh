@@ -534,7 +534,11 @@ convert()
 	fi
 
 	# read the battery level
-	battery_level=`cat /sys/devices/platform/jupiter-battery/power_supply/battery/capacity`
+	if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum'; then
+		battery_level=`cat /sys/devices/platform/sec-battery/power_supply/battery/capacity`
+	else
+		battery_level=`cat /sys/devices/platform/jupiter-battery/power_supply/battery/capacity`
+	fi
 	log "battery level: $battery_level%"
 
 	if test "$battery_level" -lt 10 && test $resource != cache && test $resource != dbdata; then
