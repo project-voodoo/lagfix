@@ -285,6 +285,7 @@ tar xf $stages_source/stage1.tar
 
 
 # clean git stuff
+rm -rf .git
 find -name '.git*' -delete;
 
 
