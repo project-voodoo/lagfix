@@ -1,4 +1,7 @@
 #!/bin/sh
+# be sure / is read+write for Gingerbread
+/bin/mount -o remount,rw /
+
 exec >> /voodoo/logs/recovery_wrapper_log.txt 2>&1
 
 if test -f /voodoo/run/cwm_enabled; then
