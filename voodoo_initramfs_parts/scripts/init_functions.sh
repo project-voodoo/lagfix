@@ -564,6 +564,8 @@ convert()
 
 	# be sure fat.format is in PATH
 	if test "$dest_fs" = "rfs"; then
+		#  make sure fat.format binary in initramfs is executable
+		chmod 750 /sbin/fat.format 2>/dev/null
 		fat.format > /dev/null 2>&1
 		returncode=$?
 		if test "$returncode" = 127 || test "$returncode" = 126 ; then
