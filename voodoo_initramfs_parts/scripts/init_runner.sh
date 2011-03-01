@@ -98,4 +98,7 @@ test -e sdcard_backup && mv -f  sdcard
 
 # finally run Samsung's android init binary
 echo "\nRunning Samsung's Android init:"
-exec /init_samsung
+/bin/rm /init
+/bin/mv /init_samsung /init
+
+exec /init
