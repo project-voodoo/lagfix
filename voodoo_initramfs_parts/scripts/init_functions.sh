@@ -218,8 +218,8 @@ detect_all_filesystems()
 
 configure_from_kernel_version()
 {
-	if test "`cat /proc/version | cut -d'.' -f 3`" = 32; then
-		kversion="2.6.32"
+	subversion=`cat /proc/version | cut -d'.' -f 3`
+	if test "$subversion" = 32 || test "$subversion" = 35 ; then
 		ext4_options=",noauto_da_alloc"
 	fi
 }
