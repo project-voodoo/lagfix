@@ -25,4 +25,4 @@ parent_name=`cat /proc/$parent_pid/cmdline`
 #	;;
 #esac
 
-#fat.format.real $*
+fat.format.real $*

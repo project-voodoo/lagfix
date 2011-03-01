@@ -878,7 +878,7 @@ letsgo()
 	# remove the tarball in maximum compression mode
 	rm -f compressed_voodoo_initramfs.tar.lzma
 
-	verify_voodoo_install
+	#verify_voodoo_install
 
 	# if /data is an Ext4 filesystem, it means we need to activate
 	# the fat.format wrapper protection

@@ -9,6 +9,11 @@ exec >> $log_dir/rfs_formatter_log.txt 2>&1
 # load partitions references
 . /voodoo/configs/partitions
 
+if ! test -d /dev/block; then
+	echo "make sure devices are created"
+	. /voodoo/scripts/create_devices.sh
+fi
+
 echo "current mounts:\n"
 mount
 
