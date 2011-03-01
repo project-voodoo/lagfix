@@ -183,4 +183,4 @@ mount -t vfat -o rw,nosuid,nodev,noexec,uid=1000,gid=1015,fmask=0002,dmask=0002,
 
 
 # run the actual recovery
-/sbin/recovery &
+exec /sbin/recovery
