@@ -867,8 +867,8 @@ letsgo()
 
 	# mount Ext4 partitions
 	test $cache_fs = ext4 && mount_ cache && > /voodoo/run/lagfix_enabled
-	#test $dbdata_fs = ext4 && mount_ dbdata && > /voodoo/run/lagfix_enabled
-	# test $data_fs = ext4 && mount_ data && > /voodoo/run/lagfix_enabled
+	test $dbdata_fs = ext4 && mount_ dbdata && > /voodoo/run/lagfix_enabled
+	test $data_fs = ext4 && mount_ data && > /voodoo/run/lagfix_enabled
 
 	# for CWM 3.x
 	generate_cwm_fstab
@@ -878,7 +878,7 @@ letsgo()
 	# remove the tarball in maximum compression mode
 	rm -f compressed_voodoo_initramfs.tar.lzma
 
-	#verify_voodoo_install
+	verify_voodoo_install
 
 	# if /data is an Ext4 filesystem, it means we need to activate
 	# the fat.format wrapper protection

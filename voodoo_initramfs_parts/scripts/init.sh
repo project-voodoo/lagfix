@@ -194,16 +194,16 @@ fi
 
 if test $lagfix_enabled = 1; then
 
-#	if ! in_recovery; then
+	if ! in_recovery; then
 		convert cache ext4
-#		convert dbdata ext4
-#	fi
-#	convert data ext4
-#	if test $system_as_rfs = 0; then
+		convert dbdata ext4
+	fi
+	convert data ext4
+	if test $system_as_rfs = 0; then
 		convert system ext4
-#	else
-#		convert system rfs
-#	fi
+	else
+		convert system rfs
+	fi
 
 	letsgo
 else
