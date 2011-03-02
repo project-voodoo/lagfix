@@ -14,6 +14,7 @@
 #      o Verizon Fascinate                                                    #
 #      o USCC Mesmerize                                                       #
 #      o Cellular South Showcase                                              #
+#      o Verizon Galaxy Tablet                                                #
 #                                                                             #
 #    Copyright Francois Simond 2010 (supercurio @ xda-developers)             #
 #       credits to gilsken for ideas and support                              #

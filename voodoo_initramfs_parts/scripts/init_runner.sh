@@ -68,8 +68,8 @@ mount_attemps=5
 while test $sdcard_is_mounted = 0 && test $mount_attemps -gt 0; do
 	sleep $wait
 
-	if test "`cat /sys/block/mmcblk0/size`" = 3907584; then
-		sdcard_dev=/dev/block/mmcblk1p1	# we are on fascinate/mesmerize/showcase
+	if test "`cat /sys/block/mmcblk0/size`" = 3907584 || test "`cat /sys/block/mmcblk0/size`" = 3825664; then
+		sdcard_dev=/dev/block/mmcblk1p1	# we are on fascinate/mesmerize/showcase/vzw-galaxytab
 	else
 		sdcard_dev=/dev/block/mmcblk0p1	# every other Galaxy S
 	fi
