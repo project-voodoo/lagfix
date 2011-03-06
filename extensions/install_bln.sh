@@ -16,7 +16,7 @@ backup="/system/lib/hw/$filename-backup-"`date '+%Y-%m-%d_%H-%M-%S'`
 
 install_condition()
 {
-	test -d "/system/lib/hw/"
+	test -d "/system/lib/hw/" && test -d "/sys/class/misc/backlightnotification"
 }
 
 extension_install_bln()
@@ -42,5 +42,5 @@ if install_condition; then
 		log "$name already installed"
 	fi
 else
-	log "$name cannot be installed"
+	log "$name cannot be installed or is not supported"
 fi
