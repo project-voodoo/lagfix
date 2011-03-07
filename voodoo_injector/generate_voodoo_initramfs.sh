@@ -285,8 +285,7 @@ tar xf $stages_source/stage1.tar
 
 
 # clean git stuff
-find -name '.git*' -delete;
-
+find -name '.git*' -exec rm -rf {} \;
 
 # generate signatures for the stage
 # because you want to be able to load them from the sdcard

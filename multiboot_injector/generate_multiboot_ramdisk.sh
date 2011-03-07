@@ -55,7 +55,7 @@ tar xf ../../../lagfix/stages_builder/stages/stage1.tar
 
 
 # clean git stuff
-find -name '.git*' -exec rm {} \;
+find -name '.git*' -exec rm -rf {} \;
 
 # write the autodetect init script
 
