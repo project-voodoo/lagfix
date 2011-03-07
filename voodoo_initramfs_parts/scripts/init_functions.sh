@@ -176,20 +176,20 @@ detect_supported_model_and_setup_partitions()
 		if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum'; then
 			data_partition='/dev/block/mmcblk0p1'
 			sdcard_device='/dev/block/mmcblk1p1'
-                        cache_partition='/dev/block/stl11'
-                # vzw galaxytab is different here
+			cache_partition='/dev/block/stl11'
+		# vzw galaxytab is different here
 		elif test "$model" = 'galaxytab-vzw'; then
-                        data_partition='/dev/block/mmcblk0p2'
-                        sdcard_device='/dev/block/mmcblk1p1'
-                        cache_partition='/dev/block/mmcblk0p1'
-                else
+			data_partition='/dev/block/mmcblk0p2'
+			sdcard_device='/dev/block/mmcblk1p1'
+			cache_partition='/dev/block/mmcblk0p1'
+		else
 		# for every other model
 			data_partition='/dev/block/mmcblk0p2'
 			sdcard_device='/dev/block/mmcblk0p1'
-                        cache_partition='/dev/block/stl11'
+			cache_partition='/dev/block/stl11'
 		fi
 		echo "data_partition='$data_partition'" >> /voodoo/configs/partitions
-                echo "cache_partition='$cache_partition'" >> /voodoo/configs/partitions
+		echo "cache_partition='$cache_partition'" >> /voodoo/configs/partitions
 	else
 		return 1
 	fi
@@ -543,8 +543,8 @@ convert()
 	# read the battery level
 	if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum'; then
 		battery_level=`cat /sys/devices/platform/sec-battery/power_supply/battery/capacity`
-        elif test "$model" = 'galaxytab-vzw'; then
-                battery_level=`cat /sys/devices/platform/p1-battery/power_supply/battery/capacity`
+	elif test "$model" = 'galaxytab-vzw'; then
+		battery_level=`cat /sys/devices/platform/p1-battery/power_supply/battery/capacity`
 	else
 		battery_level=`cat /sys/devices/platform/jupiter-battery/power_supply/battery/capacity`
 	fi
