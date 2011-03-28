@@ -741,11 +741,17 @@ finalize_interrupted_rfs_conversion()
 		archive=/sdcard/voodoo_"$resource"_conversion.tar.lzo
 		archive_ignored=/sdcard/voodoo_"$resource"_conversion_ignored.tar.lzo
 
-		# check if the /system archive is there and is more than 20MB
+		# check if an archive is there and is more than min_size
 		if test -f $archive; then
 
-			# /system is already mounted but not other resources
-			test $resource != system && mount_ $resource
+			# make sure /system is always unmounted
+			umount /system 2>/dev/null
+
+			# make sure the partition contains a valid filesystem or
+			# format it to the robust Ext4 by default
+			if ! mount_ $resource; then
+				ext4_format $resource
+			fi
 
 			# check if the resource partition is empty (or at contains less than $min_size of data)
 			if test `du -s /$resource | cut -d/ -f1` -lt $min_size; then
