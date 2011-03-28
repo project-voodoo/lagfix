@@ -377,7 +377,7 @@ check_available_space()
 	if test $dest_fs = ext4; then
 		log "check Ext4 additionnal disk usage for $resource" 1
 		case $resource in
-			system)	overhead=2 ;;
+			system)	overhead=1 ;;
 			data)	overhead=40 ;;
 			dbdata)	overhead=20 ;;
 			cache)	overhead=0 ;; # cache? don't care
@@ -441,14 +441,15 @@ ext4_format()
 {
 	common_mkfs_ext4_options='^resize_inode,^ext_attr,^huge_file'
 	case $resource in
-		system)	mkfs_options="-O $common_mkfs_ext4_options,^has_journal"  ;;
-		cache)	mkfs_options="-O $common_mkfs_ext4_options -J size=4"  ;;
+		# tune system inode number to fit available space in RFS and Ext4
+		system)	mkfs_options="-O $common_mkfs_ext4_options,^has_journal -N 7500"  ;;
+		cache)	mkfs_options="-O $common_mkfs_ext4_options -J size=4 -N 800"  ;;
 		data)	mkfs_options="-O $common_mkfs_ext4_options -J size=32" ;;
 		dbdata)	mkfs_options="-O $common_mkfs_ext4_options -J size=16" ;;
 	esac
 	mkfs.ext4 -F $mkfs_options -T default $partition
 	# force check the filesystem after 100 mounts or 100 days
-	tune2fs -c 100 -i 100d -m 0 $partition
+	tune2fs -c 100 -i 100d -m 0 -L $resource $partition
 }
 
 
