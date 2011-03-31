@@ -8,7 +8,7 @@ make -f unix/Makefile-voodoo -j8 generic
 echo
 ls -lh zip
 echo -e "\nStriping the binary with sstrip"
-../../stages_builder/buildroot-2010.08/output/staging/usr/arm-unknown-linux-uclibcgnueabi/bin/sstrip zip
+../../../arm-eabi/bin/arm-none-eabi-strip -I binary zip
 echo
 ls -lh zip
 
