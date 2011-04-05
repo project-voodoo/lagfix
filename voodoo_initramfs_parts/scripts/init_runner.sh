@@ -36,6 +36,7 @@ insmod /lib/modules/rfs_fat.ko
 
 
 # insmod Ext4 modules for injected initramfs without Ext4 driver builtin
+test -f /lib/modules/crc16.ko && insmod /lib/modules/crc16.ko
 test -f /lib/modules/jbd2.ko && insmod /lib/modules/jbd2.ko
 test -f /lib/modules/ext4.ko && insmod /lib/modules/ext4.ko
 
