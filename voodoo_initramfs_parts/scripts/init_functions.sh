@@ -742,9 +742,9 @@ finalize_interrupted_rfs_conversion()
 			umount /system 2>/dev/null
 
 			# make sure the partition contains a valid filesystem or
-			# format it to the robust Ext4 by default
+			# format to RFS in case of problem with Ext4 modules
 			if ! mount_ $resource; then
-				ext4_format $resource
+				rfs_format $resource
 			fi
 
 			# check if the resource partition is empty (or at contains less than $min_size of data)
