@@ -1,3 +1,4 @@
 # declaration of partition common for every model
+data_on_emmc=1
 dbdata_partition='/dev/block/stl10'
 system_partition='/dev/block/stl9'

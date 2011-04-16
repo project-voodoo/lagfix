@@ -10,6 +10,11 @@ get_partition_for()
 		data)		partition=$data_partition ;;
 		system)		partition=$system_partition ;;
 	esac
+
+	if test "$partition" = ""; then
+		# This device doesn't use $1 partition
+		return 1
+	fi
 }
 
 
@@ -40,7 +45,7 @@ set_fs_for()
 
 mount_()
 {
-	get_partition_for $1
+	get_partition_for $1 || return 1
 	get_fs_for $1
 
 	if test "$fs" = "ext4"; then
@@ -51,7 +56,13 @@ mount_()
 			# MoviNAND hardware support barrier, it allows to activate
 			# the journal option data=ordered and stay free from corruption
 			# even in worst cases
-			data)	ext4_data_options=',data=ordered,barrier=1' ;;
+			data)
+				if test "$data_on_emmc" = 1; then
+					ext4_data_options=',data=ordered,barrier=1'
+				else
+					ext4_data_options=',nodelalloc,data=ordered,barrier=0'
+				fi
+			;;
 			# dbdata device don't support barrier. Delayed allocations
 			# are unsafe and must be deactivated
 			dbdata)	ext4_data_options=',data=ordered,nodelalloc' ;;
@@ -182,6 +193,14 @@ detect_supported_model_and_setup_partitions()
 			data_partition='/dev/block/mmcblk0p2'
 			sdcard_device='/dev/block/mmcblk1p1'
 			cache_partition='/dev/block/mmcblk0p1'
+		# /data on OneNAND for GalaxyS4G is different here
+		# and also no dbdata
+		elif test "$model" = 'tmo-vibrant-galaxys4g'; then
+			dbdata_partition=''
+			data_on_emmc=0
+			data_partition='/dev/block/stl10'
+			cache_partition='/dev/block/stl11'
+			sdcard_device='/dev/block/mmcblk0p1'
 		else
 		# for every other model
 			data_partition='/dev/block/mmcblk0p2'
@@ -199,7 +218,7 @@ detect_supported_model_and_setup_partitions()
 detect_fs_on()
 {
 	resource=$1
-	get_partition_for $resource
+	get_partition_for $resource || return 1
 	log "filesystem detection on $resource:"
 	if tune2fs -l $partition 1>&2; then
 		# we found an ext2/3/4 partition. but is it real ?
@@ -525,7 +544,7 @@ convert()
 	test tell_conversion_happened = '' && tell_conversion_happened=0
 	
 	# use global getters
-	get_partition_for $resource
+	get_partition_for $resource || return 1
 	get_fs_for $resource
 
 	source_fs=$fs
@@ -854,7 +873,7 @@ get_cwm_fstab_mount_option_for()
 generate_cwm_fstab()
 {
 	for x in cache datadata data system; do
-		get_partition_for $x
+		get_partition_for $x || continue
 		get_fs_for $x
 		get_cwm_fstab_mount_option_for $fs
 		echo "$partition /$x $fs $cwm_mount_options" >> /voodoo/run/cwm.fstab
