@@ -170,21 +170,30 @@ load_stage()
 
 detect_supported_model_and_setup_partitions()
 {
-	# read the actual partition table
-	dd if=/dev/block/mmcblk0 of=/voodoo/tmp/partition_table bs=1 skip=446 count=64
+	# Epic 4G support, identify by OneNAND mappings
+	if test `cat /sys/devices/virtual/block/stl9/size` = 532480
+		&& test `cat /sys/devices/virtual/block/stl10/size` = 1025024
+		&& test `cat /sys/devices/virtual/block/stl11/size` = 345088; then
+		model='epic4g'
+	else
+		# read the actual partition table
+		dd if=/dev/block/mmcblk0 of=/voodoo/tmp/partition_table bs=1 skip=446 count=64
 
-	for x in /voodoo/partition_tables/* ; do
-		if cmp $x /voodoo/tmp/partition_table; then
-			model=`echo $x | /bin/cut -d \/ -f4`
-			break
-		fi
-	done
+		for x in /voodoo/partition_tables/* ; do
+			if cmp $x /voodoo/tmp/partition_table; then
+				model=`echo $x | /bin/cut -d \/ -f4`
+				break
+			fi
+		done
+	fi
 
 	if test "$model" != ""; then
 		log "model detected: $model"
 		
 		# fascinate/mesmerize/showcase are different here
-		if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum'; then
+		if test "$model" = 'fascinate'
+			|| test "$model" = 'mesmerize-showcase'
+			|| test "$model" = 'continuum'; then
 			data_partition='/dev/block/mmcblk0p1'
 			sdcard_device='/dev/block/mmcblk1p1'
 			cache_partition='/dev/block/stl11'
@@ -195,7 +204,8 @@ detect_supported_model_and_setup_partitions()
 			cache_partition='/dev/block/mmcblk0p1'
 		# /data on OneNAND for GalaxyS4G is different here
 		# and also no dbdata
-		elif test "$model" = 'tmo-vibrant-galaxys4g'; then
+		elif test "$model" = 'tmo-vibrant-galaxys4g'
+			|| test "$model" = 'epic4g'; then
 			dbdata_partition=''
 			data_on_emmc=0
 			data_partition='/dev/block/stl10'
