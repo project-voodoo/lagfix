@@ -1,3 +1,3 @@
 #!/bin/sh
-cd buildroot-2010.08/
+cd buildroot-2011.02/
 make
