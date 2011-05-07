@@ -10,4 +10,4 @@ make uclibc-menuconfig
 cp -v ../configs/uClibc.config output/toolchain/uClibc-0.9.31/.config
 
 make busybox-configure
-cp ../configs/busybox.config output/build/busybox-1.17.*/.config
+cp ../configs/busybox.config output/build/busybox-1.18.3/.config
