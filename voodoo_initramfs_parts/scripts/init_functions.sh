@@ -354,13 +354,13 @@ check_available_space()
 	test $resource != system && mount_ $resource
 
 	# read free space on internal SD
-#	sdcard_available=$((`df /sdcard | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
-
-	# read space used by data we need to backup
-#	resource_used=$((`df /$resource | cut -d' ' -f 4 | cut -d K -f 1` / 1024 ))
+	sdcard_available=$((`stat -f -c "%a * %S / (1024 * 1024)" /sdcard`))
 
 	# read space free on the partition we need to backup
-#	resource_available=$((`df /$resource | cut -d' ' -f 6 | cut -d K -f 1` / 1024 ))
+	resource_available=$((`stat -f -c "%a * %S / (1024 * 1024)" /$resource`))
+
+	# read space used by data we need to backup
+	resource_used=$(((`stat -f -c "%b * %S / (1024 * 1024)" /$resource`) - $resource_available))
 
 	log "available:        $resource_available MB" 2
 	log "used:             $resource_used MB" 2
@@ -376,19 +376,19 @@ check_available_space()
 			cache)	overhead=0 ;; # cache? don't care
 		esac
 
-#		if test $resource_available -lt $overhead; then
-#			log "$resource partition space usage too high to convert to Ext4" 2
-#			log "missing: "$(( $overhead - $resource_available ))' MB' 2
-#
-#			if test $resource = system; then
-#				log "disabling /system conversion by configuration"
-#				set_system_as_rfs
-#			fi
-#			available_space_error='partition'
-#			return 2
-#		else
-#			log "enough free space on /$resource to convert to Ext4" 2
-#		fi
+		if test $resource_available -lt $overhead; then
+			log "$resource partition space usage too high to convert to Ext4" 2
+			log "missing: "$(( $overhead - $resource_available ))' MB' 2
+
+			if test $resource = system; then
+				log "disabling /system conversion by configuration"
+				set_system_as_rfs
+			fi
+			available_space_error='partition'
+			return 2
+		else
+			log "enough free space on /$resource to convert to Ext4" 2
+		fi
 	fi
 
 	# umount the resource if it's not /system
