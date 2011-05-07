@@ -575,15 +575,6 @@ convert()
 		fi
 	fi
 
-	# make sure df is there or cancel conversion
-	if ! df > /dev/null 2>&1 ; then
-		log "ERROR: unable to call the df command from system, cancel conversion" 1
-		log "Your Android system partition is empty or it is corrupt (Universal Lagfix /system corruption)" 1
-		log "You may flash a new factoryfs.rfs with Odin or try to it with the RFS fixer" 1
-		say "no-system"
-		return 1
-	fi
-
 	# check for free space in sd
 	if ! check_available_space $resource; then
 		case $available_space_error in
