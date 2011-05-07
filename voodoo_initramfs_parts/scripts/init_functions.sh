@@ -240,7 +240,7 @@ say()
 	# sound system lazy loader
 	if load_soundsystem; then 
 		# play !
-		madplay -A -3 -o wave:- "/voodoo/voices/$1.mp3" 2> /dev/null | \
+		madplay --stereo -A -3 -o wave:- "/voodoo/voices/$1.mp3" 2> /dev/null | \
 			 aplay -Dpcm.AndroidPlayback_Speaker --buffer-size=4096
 	fi
 }
