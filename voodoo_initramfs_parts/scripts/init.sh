@@ -56,7 +56,7 @@ ln -s /voodoo/root/etc etc
 # detect the model using the system build.prop
 if ! detect_supported_model_and_setup_partitions; then
 	# the hardware model is unknown
-	log "model not detected"
+	log "model not supported by lagfix"
 
 	# configure all in RFS
 	system_fs='rfs'

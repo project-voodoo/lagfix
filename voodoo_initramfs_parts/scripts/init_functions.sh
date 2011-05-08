@@ -184,6 +184,7 @@ detect_supported_model_and_setup_partitions()
 		echo "data_partition='$data_partition'" >> /voodoo/configs/partitions
 
 	else
+		dd if=/dev/block/mmcblk0 of=/voodoo/run/model_not_supported-mbr.bin bs=512 count=1
 		return 1
 	fi
 }
