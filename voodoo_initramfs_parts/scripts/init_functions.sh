@@ -395,10 +395,10 @@ check_available_space()
 	test "$resource" != "system" && umount /$resource
 
 	# ask for 1% more free space for security reasons
-#	if ! test $sdcard_available -ge $(( $resource_used + $resource_used / 100)); then
-#		available_space_error='sdcard'
-#		return 1
-#	fi
+	if ! test $sdcard_available -ge $(( $resource_used + $resource_used / 100)); then
+		available_space_error='sdcard'
+		return 1
+	fi
 	return 0
 }
 
