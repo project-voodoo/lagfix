@@ -725,6 +725,7 @@ finalize_interrupted_rfs_conversion()
 	for resource in dbdata data system; do
 		archive=/sdcard/voodoo_"$resource"_conversion.tar.lzo
 		archive_ignored=/sdcard/voodoo_"$resource"_conversion_ignored.tar.lzo
+		archive_failed=/sdcard/voodoo_"$resource"_conversion_failed_restore.tar.lzo
 
 		# check if an archive is there and is more than min_size
 		if test -f $archive; then
@@ -756,7 +757,7 @@ finalize_interrupted_rfs_conversion()
 					log "/$resource backup restored, workaround successful" 1
 					rm $archive
 				else
-					mv $archive /sdcard/voodoo_"$archive"_conversion_failed_restore.tar.lzo
+					mv $archive $archive_failed
 					log "/$resource restore error, unrecoverable error" 1
 					log "attempt boot to recovery" 1
 					/system/bin/reboot recovery
