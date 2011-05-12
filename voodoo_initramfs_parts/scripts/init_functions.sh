@@ -185,30 +185,48 @@ detect_supported_model_and_setup_partitions()
 		
 		# fascinate/mesmerize/showcase are different here
 		if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum'; then
-			data_partition='/dev/block/mmcblk0p1'
 			sdcard_device='/dev/block/mmcblk1p1'
+			data_partition='/dev/block/mmcblk0p1'
+			dbdata_partition='/dev/block/stl10'
 			cache_partition='/dev/block/stl11'
+			system_partition='/dev/block/stl9'
 		# vzw galaxytab is different here
 		elif test "$model" = 'galaxytab-vzw'; then
-			data_partition='/dev/block/mmcblk0p2'
 			sdcard_device='/dev/block/mmcblk1p1'
+			data_partition='/dev/block/mmcblk0p2'
+			dbdata_partition='/dev/block/stl10'
 			cache_partition='/dev/block/mmcblk0p1'
+			system_partition='/dev/block/stl9'
 		# /data on OneNAND for GalaxyS4G is different here
 		# and also no dbdata
 		elif test "$model" = 'tmo-vibrant-galaxys4g'; then
-			dbdata_partition=''
 			data_on_emmc=0
-			data_partition='/dev/block/stl10'
-			cache_partition='/dev/block/stl11'
 			sdcard_device='/dev/block/mmcblk0p1'
+			data_partition='/dev/block/stl10'
+			dbdata_partition=''
+			cache_partition='/dev/block/stl11'
+			system_partition='/dev/block/stl9'
+		# All partitions are different on the DROID Charge
+		# compared to all other SGS devices.
+		# (ie. Samsung Stealth, SCH-I510)
+		elif test "$model" = 'charge'; then
+			sdcard_device='/dev/block/mmcblk1p1'
+			data_partition='/dev/block/mmcblk0p1'
+			dbdata_partition='/dev/block/stl11'
+			cache_partition='/dev/block/mmcblk0p3'
+			system_partition='/dev/block/stl10'
 		else
 		# for every other model
-			data_partition='/dev/block/mmcblk0p2'
 			sdcard_device='/dev/block/mmcblk0p1'
+			data_partition='/dev/block/mmcblk0p2'
+			dbdata_partition='/dev/block/stl10'
 			cache_partition='/dev/block/stl11'
+			system_partition='/dev/block/stl9'
 		fi
 		echo "data_partition='$data_partition'" >> /voodoo/configs/partitions
+		echo "dbdata_partition='$dbdata_partition'" >> /voodoo/configs/partitions
 		echo "cache_partition='$cache_partition'" >> /voodoo/configs/partitions
+		echo "system_partition='$system_partition'" >> /voodoo/configs/partitions
 	else
 		return 1
 	fi
@@ -561,7 +579,7 @@ convert()
 	fi
 
 	# read the battery level
-	if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum'; then
+	if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum' || test "$model" = 'charge'; then
 		battery_level=`cat /sys/devices/platform/sec-battery/power_supply/battery/capacity`
 	elif test "$model" = 'galaxytab-vzw'; then
 		battery_level=`cat /sys/devices/platform/p1-battery/power_supply/battery/capacity`
