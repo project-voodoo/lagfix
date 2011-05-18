@@ -175,7 +175,7 @@ transform_to_zlma()
 
 	tar c * | lzma -9 > ../compressed_voodoo_initramfs.tar.lzma
 
-	rm -r *
+	rm -rf *
 	mv ../bin .
 	mv ../compressed_voodoo_initramfs.tar.lzma .
 
