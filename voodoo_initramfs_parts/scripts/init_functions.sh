@@ -476,13 +476,13 @@ rfs_format()
 
 ext4_format()
 {
-	common_mkfs_ext4_options='^resize_inode,^ext_attr,^huge_file'
+	common_mkfs_ext4_options='^extent,^flex_bg,^uninit_bg,^has_journal'
 	case $resource in
 		# tune system inode number to fit available space in RFS and Ext4
-		system)	mkfs_options="-O $common_mkfs_ext4_options,^has_journal -N 7500"  ;;
-		cache)	mkfs_options="-O $common_mkfs_ext4_options -J size=4 -N 800"  ;;
-		data)	mkfs_options="-O $common_mkfs_ext4_options -J size=32" ;;
-		dbdata)	mkfs_options="-O $common_mkfs_ext4_options -J size=16" ;;
+		system) mkfs_options="-O $common_mkfs_ext4_options,^large_file -L SYSTEM -b 4096 -m 0 -F"  ;;
+		cache)  mkfs_options="-O $common_mkfs_ext4_options -L CACHE -b 4096 -m 0 -F"  ;;
+		data)   mkfs_options="-O $common_mkfs_ext4_options -L DATA -b 4096 -m 0 -F" ;;
+		dbdata) mkfs_options="-O $common_mkfs_ext4_options,^large_file -L DATADATA -b 4096 -m 0 -F" ;;
 	esac
 	mkfs.ext4 -F $mkfs_options -T default $partition
 	# force check the filesystem after 100 mounts or 100 days
