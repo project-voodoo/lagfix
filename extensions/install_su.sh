@@ -1,16 +1,19 @@
 # Voodoo lagfix extension
 
 name='secure su binary for Superuser apk'
-source='/voodoo/extensions/su/su-2.3.6.1-ef'
-dest='/system/xbin/su'
+binary_source='/voodoo/extensions/su/su-2.3.6.1-ef'
+apk_source='/voodoo/extensions/su/Superuser.apk'
+binary_dest='/system/xbin/su'
+apk_dest='/system/app/Superuser.apk'
 
 extension_install_su()
 {
-	cp $source $dest
+	cp $binary_source $binary_dest
+	cp $apk_source $apk_dest
 	# make sure it's owned by root
-	chown 0.0 $dest
+	chown 0.0 $binary_dest
 	# sets the suid permission
-	chmod 06755 $dest
+	chmod 06755 $binary_dest
 	log "$name now installed"
 }
 
@@ -22,7 +25,7 @@ install_condition()
 
 if install_condition; then
 	# test if the su binary already exist in xbin
-	if test -u $dest ; then
+	if test -u $binary_dest && test -f $apk_dest; then
 		# okay, the su binary exist and is already suid
 		if test $source -nt $dest; then
 
