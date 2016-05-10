@@ -185,30 +185,48 @@ detect_supported_model_and_setup_partitions()
 		
 		# fascinate/mesmerize/showcase are different here
 		if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum'; then
-			data_partition='/dev/block/mmcblk0p1'
 			sdcard_device='/dev/block/mmcblk1p1'
+			data_partition='/dev/block/mmcblk0p1'
+			dbdata_partition='/dev/block/stl10'
 			cache_partition='/dev/block/stl11'
+			system_partition='/dev/block/stl9'
 		# vzw galaxytab is different here
 		elif test "$model" = 'galaxytab-vzw'; then
-			data_partition='/dev/block/mmcblk0p2'
 			sdcard_device='/dev/block/mmcblk1p1'
+			data_partition='/dev/block/mmcblk0p2'
+			dbdata_partition='/dev/block/stl10'
 			cache_partition='/dev/block/mmcblk0p1'
+			system_partition='/dev/block/stl9'
 		# /data on OneNAND for GalaxyS4G is different here
 		# and also no dbdata
 		elif test "$model" = 'tmo-vibrant-galaxys4g'; then
-			dbdata_partition=''
 			data_on_emmc=0
-			data_partition='/dev/block/stl10'
-			cache_partition='/dev/block/stl11'
 			sdcard_device='/dev/block/mmcblk0p1'
+			data_partition='/dev/block/stl10'
+			dbdata_partition=''
+			cache_partition='/dev/block/stl11'
+			system_partition='/dev/block/stl9'
+		# All partitions are different on the DROID Charge
+		# compared to all other SGS devices.
+		# (ie. Samsung Stealth, SCH-I510)
+		elif test "$model" = 'charge'; then
+			sdcard_device='/dev/block/mmcblk1p1'
+			data_partition='/dev/block/mmcblk0p1'
+			dbdata_partition='/dev/block/stl11'
+			cache_partition='/dev/block/mmcblk0p3'
+			system_partition='/dev/block/stl10'
 		else
 		# for every other model
-			data_partition='/dev/block/mmcblk0p2'
 			sdcard_device='/dev/block/mmcblk0p1'
+			data_partition='/dev/block/mmcblk0p2'
+			dbdata_partition='/dev/block/stl10'
 			cache_partition='/dev/block/stl11'
+			system_partition='/dev/block/stl9'
 		fi
 		echo "data_partition='$data_partition'" >> /voodoo/configs/partitions
+		echo "dbdata_partition='$dbdata_partition'" >> /voodoo/configs/partitions
 		echo "cache_partition='$cache_partition'" >> /voodoo/configs/partitions
+		echo "system_partition='$system_partition'" >> /voodoo/configs/partitions
 	else
 		return 1
 	fi
@@ -458,13 +476,13 @@ rfs_format()
 
 ext4_format()
 {
-	common_mkfs_ext4_options='^resize_inode,^ext_attr,^huge_file'
+	common_mkfs_ext4_options='^extent,^flex_bg,^uninit_bg,^has_journal'
 	case $resource in
 		# tune system inode number to fit available space in RFS and Ext4
-		system)	mkfs_options="-O $common_mkfs_ext4_options,^has_journal -N 7500"  ;;
-		cache)	mkfs_options="-O $common_mkfs_ext4_options -J size=4 -N 800"  ;;
-		data)	mkfs_options="-O $common_mkfs_ext4_options -J size=32" ;;
-		dbdata)	mkfs_options="-O $common_mkfs_ext4_options -J size=16" ;;
+		system) mkfs_options="-O $common_mkfs_ext4_options,^large_file -L SYSTEM -b 4096 -m 0 -F"  ;;
+		cache)  mkfs_options="-O $common_mkfs_ext4_options -L CACHE -b 4096 -m 0 -F"  ;;
+		data)   mkfs_options="-O $common_mkfs_ext4_options -L DATA -b 4096 -m 0 -F" ;;
+		dbdata) mkfs_options="-O $common_mkfs_ext4_options,^large_file -L DATADATA -b 4096 -m 0 -F" ;;
 	esac
 	mkfs.ext4 -F $mkfs_options -T default $partition
 	# force check the filesystem after 100 mounts or 100 days
@@ -561,7 +579,7 @@ convert()
 	fi
 
 	# read the battery level
-	if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum'; then
+	if test "$model" = 'fascinate' || test "$model" = 'mesmerize-showcase' || test "$model" = 'continuum' || test "$model" = 'charge'; then
 		battery_level=`cat /sys/devices/platform/sec-battery/power_supply/battery/capacity`
 	elif test "$model" = 'galaxytab-vzw'; then
 		battery_level=`cat /sys/devices/platform/p1-battery/power_supply/battery/capacity`
