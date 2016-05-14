@@ -224,9 +224,15 @@ detect_fs_on()
 		# we found an ext2/3/4 partition. but is it real ?
 		# if the data partition mounts as rfs, it means
 		# that this Ext4 partition is just lost bits still here
-		log "Ext4 on $partition" 1
-		echo ext4
-		return
+		if (e2fsck -n $partition); then
+			log "Ext4 on $partition" 1
+			echo ext4
+			return
+		else
+			log "RFS on $partition (probably)" 1
+			echo rfs
+			return
+		fi
 	fi
 	log "RFS on $partition" 1
 	echo rfs
